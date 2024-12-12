@@ -1,0 +1,42 @@
+Player,position,multiplier,salary,status,game_window,SOS,Floor,Consensus,Proj.,Ceiling,3D Proj.,GB_Projection,GB_Projection_Floor,GB_Projection_Ceiling
+Anthony Richardson,QB,1.2,6960,Active,Sunday Afternoon,-9%,14.0,16.5,16.7,21.2,17.1,20.52,16.8,25.44
+Drake Maye,QB,1.2,6720,Active,Sunday Afternoon,-8%,14.9,15.3,16.2,20.7,16.8,20.16,17.88,24.84
+Tua Tagovailoa,QB,1.0,6100,Active,Sunday Morning,6%,16.4,16.6,18.2,21.7,18.5,18.5,16.4,21.7
+Jacoby Brissett,QB,1.2,5520,Active,Sunday Afternoon,,,,,,,,,
+Will Levis,QB,1.3,6500,Active,Sunday Morning,21%,13.8,14.3,15.2,19.9,15.8,20.54,17.94,25.87
+Jake Browning,QB,1.1,4730,Active,Sunday Morning,,,,,,,,,
+Mac Jones,QB,1.0,4900,Active,Sunday Morning,1%,12.2,13.1,12.9,18.9,13.9,13.9,12.2,18.9
+Isaac Guerendo,RB,1.3,8320,Active,Thursday Night,,,,,,,,,
+Cam Akers,RB,1.0,4100,Active,Monday Night,13%,3.2,5.1,5.0,11.0,5.8,5.8,3.2,11.0
+Isaac Guerendo,RB,1.1,7040,Active,Thursday Night,,,,,,,,,
+Tyler Allgeier,RB,1.1,4950,Active,Monday Night,12%,4.2,6.8,6.0,12.2,6.9,7.59,4.62,13.42
+Miles Sanders,RB,1.2,4800,Injured Reserve,Sunday Morning,,,,,,,,,
+De'Von Achane,RB,1.2,9480,Active,Sunday Morning,-16%,10.9,17.6,17.9,22.2,17.4,20.88,13.08,26.64
+Saquon Barkley,RB,1.5,12900,Active,Sunday Afternoon,0%,11.1,19.4,18.5,23.1,17.9,26.85,16.65,34.65
+Bucky Irving,RB,1.3,8190,Active,Sunday Afternoon,-13%,6.8,11.3,11.3,17.5,11.7,15.21,8.84,22.75
+Chuba Hubbard,RB,1.4,9100,Active,Sunday Morning,6%,10.4,16.4,16.2,20.4,15.9,22.26,14.56,28.56
+Kyren Williams,RB,1.4,10220,Active,Thursday Night,7%,9.7,15.2,14.4,20.9,14.8,20.72,13.58,29.26
+Jordan Mason,RB,1.3,5200,Injured Reserve,Thursday Night,,,,,,,,,
+Ray Davis,RB,1.3,6110,Active,Sunday Afternoon,-24%,2.1,4.0,3.3,10.1,4.4,5.72,2.73,13.13
+Christian McCaffrey,RB,1.2,4800,Injured Reserve,Thursday Night,,,,,,,,,
+Nico Collins,WR,1.3,10530,Active,Sunday Morning,-8%,10.6,17.8,19.3,23.1,18.3,23.79,13.78,30.03
+Quentin Johnston,WR,1.2,6000,Active,Sunday Afternoon,11%,6.9,10.6,10.6,17.5,11.2,13.44,8.28,21.0
+CeeDee Lamb,WR,1.3,9490,Active,Sunday Morning,-9%,9.1,15.6,15.7,18.7,15.0,19.5,11.83,24.31
+Ricky Pearsall,WR,1.0,4400,Active,Thursday Night,13%,3.3,5.5,5.1,10.7,5.9,5.9,3.3,10.7
+Tyler Lockett,WR,1.0,4000,Active,Sunday Night,-7%,4.8,7.1,6.8,14.0,7.8,7.8,4.8,14.0
+JuJu Smith-Schuster,WR,1.2,4440,Active,Sunday Morning,12%,3.0,4.7,4.3,9.4,5.0,6.0,3.6,11.28
+Quentin Johnston,WR,1.2,6000,Active,Sunday Afternoon,11%,6.9,10.6,10.6,17.5,11.2,13.44,8.28,21.0
+Demario Douglas,WR,1.2,5400,Active,Sunday Afternoon,-7%,7.5,9.4,10.4,16.1,11.0,13.2,9.0,19.32
+Jakobi Meyers,WR,1.0,5700,Active,Monday Night,26%,9.0,15.0,14.5,17.4,14.0,14.0,9.0,17.4
+Nico Collins,WR,1.1,8910,Active,Sunday Morning,-8%,10.6,17.8,19.3,23.1,18.3,20.13,11.66,25.41
+Jameson Williams,WR,1.0,5600,Active,Sunday Afternoon,0%,7.9,11.5,12.1,19.1,12.7,12.7,7.9,19.1
+DJ Moore,WR,1.0,5800,Active,Monday Night,24%,8.8,13.7,15.8,18.8,15.0,15.0,8.8,18.8
+CeeDee Lamb,WR,1.2,8760,Active,Sunday Morning,-9%,9.1,15.6,15.7,18.7,15.0,18.0,10.92,22.44
+Ja'Lynn Polk,WR,1.2,3720,Active,Sunday Afternoon,-7%,1.4,2.9,2.4,7.1,3.1,3.72,1.68,8.52
+Van Jefferson,WR,1.1,3850,Active,Sunday Afternoon,-19%,2.9,4.3,4.4,10.4,5.3,5.83,3.19,11.44
+Mike Gesicki,TE,1.3,4550,Active,Sunday Morning,-7%,4.2,6.1,7.0,13.6,7.7,10.01,5.46,17.68
+Dalton Kincaid,TE,1.1,5390,Active,Sunday Afternoon,-32%,6.2,9.0,8.6,15.6,9.5,10.45,6.82,17.16
+Cade Otton,TE,1.0,4500,Active,Sunday Afternoon,-28%,6.9,9.5,8.9,15.2,9.7,9.7,6.9,15.2
+Evan Engram,TE,1.5,6900,Active,Sunday Morning,-18%,7.2,10.5,10.1,14.8,10.4,15.6,10.8,22.2
+Hunter Henry,TE,1.1,4730,Active,Sunday Afternoon,-8%,7.1,10.2,10.4,15.7,10.8,11.88,7.81,17.27
+Dalton Kincaid,TE,1.4,6860,Active,Sunday Afternoon,-32%,6.2,9.0,8.6,15.6,9.5,13.3,8.68,21.84
