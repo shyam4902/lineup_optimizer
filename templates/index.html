@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>GameBlazers Football Lineup Optimizer</title>
+    <style>
+        :root {
+            color-scheme: dark;
+            --background: #080a0c;
+            --surface: #15191d;
+            --surface-muted: #20262b;
+            --border: #354049;
+            --text: #f3f5f6;
+            --muted: #aab5bc;
+            --accent: #39ff14;
+            --danger: #ff8c8c;
+        }
+
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            background: var(--background);
+            color: var(--text);
+            font: 16px/1.5 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        }
+        main { width: min(100% - 2rem, 1100px); margin: 0 auto; padding: 2.5rem 0 4rem; }
+        h1, h2, h3 { line-height: 1.2; }
+        h1 { margin-bottom: .5rem; font-size: clamp(1.8rem, 4vw, 2.7rem); }
+        h2 { margin-top: 0; }
+        h3 { margin-bottom: .4rem; }
+        p { color: var(--muted); }
+        .intro { max-width: 740px; margin-bottom: 1.75rem; }
+        .card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 1.25rem; margin-top: 1rem; }
+        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+        label { display: block; font-weight: 700; margin-bottom: .4rem; }
+        input[type="file"], select {
+            width: 100%; min-height: 2.75rem; padding: .55rem .65rem;
+            background: var(--surface-muted); color: var(--text); border: 1px solid var(--border); border-radius: 6px;
+        }
+        input:focus, select:focus, button:focus, summary:focus { outline: 3px solid rgba(57, 255, 20, .45); outline-offset: 2px; }
+        .field-help { margin: .4rem 0 0; font-size: .9rem; }
+        .form-actions { display: flex; align-items: end; gap: 1rem; margin-top: 1.25rem; }
+        button { min-height: 2.75rem; padding: .6rem 1rem; border: 0; border-radius: 6px; background: var(--accent); color: #071007; cursor: pointer; font-weight: 800; }
+        button:hover { filter: brightness(.9); }
+        .notice { border-left: 4px solid var(--danger); color: var(--danger); background: rgba(255, 140, 140, .08); padding: .8rem 1rem; margin: 1rem 0; }
+        .notice ul { margin: 0; padding-left: 1.25rem; }
+        .success { border-left-color: var(--accent); color: var(--text); }
+        .summary-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: .75rem; margin: 1rem 0 1.25rem; }
+        .metric { background: var(--surface-muted); border-radius: 6px; padding: .75rem; }
+        .metric dt { color: var(--muted); font-size: .88rem; }
+        .metric dd { margin: .15rem 0 0; font-size: 1.15rem; font-weight: 800; }
+        .table-wrap { overflow-x: auto; }
+        table { width: 100%; min-width: 760px; border-collapse: collapse; }
+        th, td { padding: .65rem .5rem; border-bottom: 1px solid var(--border); text-align: left; white-space: nowrap; }
+        th { color: var(--muted); font-size: .85rem; }
+        td.numeric, th.numeric { text-align: right; }
+        .processing-summary { display: grid; grid-template-columns: repeat(4, 1fr); gap: .5rem; margin-top: 1.5rem; }
+        .processing-summary div { background: var(--surface-muted); padding: .65rem; border-radius: 6px; }
+        .processing-summary dt { color: var(--muted); font-size: .82rem; }
+        .processing-summary dd { margin: .1rem 0 0; font-weight: 800; }
+        .diagnostics { margin-top: 1rem; }
+        .diagnostics ul { columns: 2; padding-left: 1.25rem; }
+        .technical { color: var(--muted); font-size: .85rem; }
+        @media (max-width: 680px) {
+            main { width: min(100% - 1rem, 1100px); padding-top: 1.25rem; }
+            .form-grid, .summary-grid, .processing-summary { grid-template-columns: 1fr; }
+            .form-actions { display: block; }
+            button { width: 100%; margin-top: .75rem; }
+            .diagnostics ul { columns: 1; }
+        }
+    </style>
+</head>
+<body>
+<main>
+    <header>
+        <h1>GameBlazers Football Lineup Optimizer</h1>
+        <p class="intro">Upload your GameBlazers roster export and raw, unmultiplied weekly projections. The optimizer matches eligible cards, applies each card multiplier once, and returns one complete optimal lineup for the selected contest.</p>
+    </header>
+
+    {% if errors %}
+    <section class="notice" role="alert" aria-label="Input errors">
+        <ul>
+        {% for error in errors %}<li>{{ error }}</li>{% endfor %}
+        </ul>
+    </section>
+    {% endif %}
+
+    <section class="card" aria-labelledby="upload-heading">
+        <h2 id="upload-heading">Build one lineup</h2>
+        <p>Only cards with <strong>Active</strong> status, a matched projection, and a positive raw projection are eligible.</p>
+        <form action="{{ url_for('optimize') }}" method="post" enctype="multipart/form-data">
+            <div class="form-grid">
+                <div>
+                    <label for="roster_file">GameBlazers roster CSV</label>
+                    <input id="roster_file" name="roster_file" type="file" accept=".csv,text/csv" required>
+                    <p class="field-help">Required fields include player, team, position, multiplier, salary, and status.</p>
+                </div>
+                <div>
+                    <label for="projection_file">Raw weekly projections CSV</label>
+                    <input id="projection_file" name="projection_file" type="file" accept=".csv,text/csv" required>
+                    <p class="field-help">Use raw projection values, not an already multiplier-adjusted total.</p>
+                </div>
+            </div>
+            <div class="form-actions">
+                <div>
+                    <label for="contest">Contest</label>
+                    <select id="contest" name="contest">
+                    {% for name, contest in contests.items() %}
+                        <option value="{{ name }}" {% if name == selected_contest %}selected{% endif %}>{{ name }} — {{ contest.slots|join(' / ') }} ({{ contest.minimum_salary|currency }}–{{ contest.maximum_salary|currency }})</option>
+                    {% endfor %}
+                    </select>
+                </div>
+                <button type="submit">Optimize Lineup</button>
+            </div>
+        </form>
+    </section>
+
+    {% if result %}
+    <section class="card" aria-labelledby="result-heading">
+        {% if result.feasible %}
+        <div class="notice success" role="status">
+            <h2 id="result-heading">Complete optimal lineup</h2>
+            <p>{{ result.contest }} returned all {{ result.slots|length }} required slots. No partial lineup is shown.</p>
+        </div>
+        <dl class="summary-grid">
+            <div class="metric"><dt>Contest</dt><dd>{{ result.contest }}</dd></div>
+            <div class="metric"><dt>Total adjusted projection</dt><dd>{{ result.total_adjusted_projection|decimal }}</dd></div>
+            <div class="metric"><dt>Total salary</dt><dd>{{ result.total_salary|currency }}</dd></div>
+            <div class="metric"><dt>Contest minimum salary</dt><dd>{{ result.minimum_salary|currency }}</dd></div>
+            <div class="metric"><dt>Contest maximum salary</dt><dd>{{ result.maximum_salary|currency }}</dd></div>
+            <div class="metric"><dt>Remaining salary</dt><dd>{{ result.remaining_salary|currency }}</dd></div>
+        </dl>
+        <div class="table-wrap">
+            <table>
+                <caption class="technical">Optimized {{ result.contest }} lineup</caption>
+                <thead><tr><th>Slot</th><th>Player</th><th>Position</th><th>Team</th><th class="numeric">Multiplier</th><th class="numeric">Salary</th><th class="numeric">Raw projection</th><th class="numeric">Adjusted projection</th></tr></thead>
+                <tbody>
+                {% for row in result.lineup %}
+                    <tr data-slot="{{ row.slot }}">
+                        <td>{{ row.slot }}</td><td>{{ row.player_name }}</td><td>{{ row.position }}</td><td>{{ row.team }}</td>
+                        <td class="numeric">{{ row.multiplier|multiplier }}</td><td class="numeric">{{ row.salary|currency }}</td>
+                        <td class="numeric">{{ row.raw_projection|decimal }}</td><td class="numeric">{{ row.adjusted_projection|decimal }}</td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="notice" role="alert">
+            <h2 id="result-heading">Input could not be optimized</h2>
+            <p>{{ infeasible_messages.get(result.infeasible_reason, 'No complete lineup satisfies the contest rules.') }}</p>
+            <p class="technical">Technical reason: {{ result.infeasible_reason }}</p>
+        </div>
+        {% endif %}
+
+        <h3>Processing summary</h3>
+        <dl class="processing-summary">
+            <div><dt>Roster rows read</dt><dd>{{ result.roster_rows_read }}</dd></div>
+            <div><dt>Projection rows read</dt><dd>{{ result.projection_rows_read }}</dd></div>
+            <div><dt>Matched cards</dt><dd>{{ result.matched_cards }}</dd></div>
+            <div><dt>Eligible cards</dt><dd>{{ result.eligible_cards }}</dd></div>
+        </dl>
+
+        {% if diagnostic_counts %}
+        <div class="diagnostics">
+            <h3>Exclusions and diagnostics</h3>
+            <ul>
+            {% for diagnostic in diagnostic_counts %}<li>{{ diagnostic.label }}: {{ diagnostic.count }}</li>{% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+        {% if diagnostic_details %}
+        <details>
+            <summary>Details</summary>
+            <ul>
+            {% for diagnostic in diagnostic_details %}
+                <li>{% if diagnostic.player_name %}<strong>{{ diagnostic.player_name }}</strong> — {% endif %}{{ diagnostic.reason|replace('_', ' ') }}{% if diagnostic.source_row %}, source row {{ diagnostic.source_row }}{% endif %}{% if diagnostic.detail %}: {{ diagnostic.detail }}{% endif %}</li>
+            {% endfor %}
+            </ul>
+        </details>
+        {% endif %}
+    </section>
+    {% endif %}
+</main>
+</body>
+</html>

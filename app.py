@@ -1,180 +1,156 @@
-from flask import Flask, request, render_template, redirect, url_for
-from werkzeug.utils import secure_filename
+from __future__ import annotations
+
+import io
 import os
-import pandas as pd
+from collections import Counter
+from typing import Any
+
+from flask import Flask, render_template, request
+
+from optimizer_core import CONTESTS, OptimizationResult, optimize_lineup
+
 
 app = Flask(__name__)
+app.config["MAX_CONTENT_LENGTH"] = 2 * 1024 * 1024
 
-
-# Define contest configurations
-CONTESTS = {
-    "Spark": {"lineup": {"QB": 1, "RB": 1, "WR": 1, "TE": 1}, "salary_cap": 32000},
-    "Scorcher": {"lineup": {"QB": 1, "RB": 1, "WR": 1, "TE": 1, "Flex": 1}, "salary_cap": 36750},
-    "Wildfire": {"lineup": {"QB": 1, "RB": 1, "WR": 1, "TE": 1, "Flex": 2}, "salary_cap": 48000},
-    "Inferno": {"lineup": {"QB": 1, "RB": 2, "WR": 2, "TE": 1, "Flex": 1, "Superflex": 1}, "salary_cap": 64000},
+ALLOWED_EXTENSIONS = {"csv"}
+DIAGNOSTIC_LABELS = {
+    "non_active": "Non-active",
+    "zero_projection": "Zero projection",
+    "missing_projection": "Missing projection",
+    "name_unmatched": "Name unmatched",
+    "position_mismatch": "Position mismatch",
+    "team_mismatch": "Team mismatch",
+    "malformed_roster_row": "Malformed roster row",
+    "malformed_projection_row": "Malformed projection row",
+    "projection_ambiguous": "Projection ambiguity",
+    "exact_visible_duplicate_collapsed": "Exact visible duplicate collapsed",
+}
+INFEASIBLE_MESSAGES = {
+    "malformed_input_schema": "The uploaded files do not have the required columns or contain malformed input fields.",
+    "no_eligible_card_for_required_slot": "There is no eligible card for at least one required lineup slot.",
+    "duplicate_athlete_constraint": "The available cards cannot complete this lineup without using one athlete more than once.",
+    "maximum_cap_infeasibility": "No complete lineup fits below the contest maximum salary.",
+    "minimum_spend_infeasibility": "No complete lineup reaches the contest minimum salary while respecting the other rules.",
+    "no_feasible_assignment": "No complete lineup satisfies all contest constraints.",
 }
 
-# Configure upload folder and allowed extensions
-UPLOAD_FOLDER = 'uploads'
-ALLOWED_EXTENSIONS = {'csv'}
-app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
-# Ensure the upload folder exists
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+def allowed_file(filename: str) -> bool:
+    return "." in filename and filename.rsplit(".", 1)[1].casefold() in ALLOWED_EXTENSIONS
 
-def allowed_file(filename):
-    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
-@app.route('/')
-def home():
-    return '''
-        <!doctype html>
-        <title>Lineup Optimizer</title>
-        <h1>Upload your Roster</h1>
-        <form action="/upload" method="post" enctype="multipart/form-data">
-            <input type="file" name="file">
-            <input type="submit" value="Upload">
-        </form>
-    '''
-
-@app.route('/upload', methods=['POST'])
-def upload_file():
-    if 'file' not in request.files:
-        return "No file part"
-    file = request.files['file']
-    if file.filename == '':
-        return "No selected file"
-    if file and allowed_file(file.filename):
-        filename = secure_filename(file.filename)
-        filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-        file.save(filepath)
-        return redirect(url_for('process_file', filename=filename))
-    return "File not allowed"
-
-@app.route('/process/<filename>')
-def process_file(filename):
-    filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+def _read_upload(upload: Any, label: str) -> tuple[io.StringIO | None, str | None]:
+    filename = str(upload.filename or "")
+    if not filename:
+        return None, f"Choose a {label} CSV file."
+    if not allowed_file(filename):
+        return None, f"{label.capitalize()} must be a CSV file."
     try:
-        # Load the CSV
-        df = pd.read_csv(filepath)
-
-        # Store the processed data temporarily
-        df.to_csv(os.path.join(app.config['UPLOAD_FOLDER'], "processed_roster.csv"), index=False)
-
-        # Redirect to lineup selection
-        return '''
-            <h1>File Processed Successfully</h1>
-            <a href="/lineups">Generate Lineups</a>
-        '''
-
-    except Exception as e:
-        return f"Error processing file: {e}"
+        content = upload.stream.read().decode("utf-8-sig")
+    except UnicodeDecodeError:
+        return None, f"{label.capitalize()} could not be decoded as UTF-8. Save it as a UTF-8 CSV and try again."
+    return io.StringIO(content), None
 
 
-from itertools import combinations
-
-from pulp import LpMaximize, LpProblem, LpVariable, lpSum
-
-@app.route('/lineups', methods=['GET', 'POST'])
-def lineups():
-    # Load the processed roster
-    filepath = os.path.join(app.config['UPLOAD_FOLDER'], "processed_roster.csv")
-    df = pd.read_csv(filepath)
-
-    if request.method == 'POST':
-        contest_type = request.form.get("contest")
-        contest_settings = CONTESTS.get(contest_type)
-
-        if not contest_settings:
-            return f"Error: Contest type '{contest_type}' not found."
-
-        lineup_requirements = contest_settings["lineup"]
-        salary_cap = contest_settings["salary_cap"]
-
-        # Initialize results
-        lineups = []
-        available_players = df.copy()
-
-        while True:
-            lineup = []
-            total_salary = 0
-            total_projection = 0
-
-            try:
-                for position, count in lineup_requirements.items():
-                    if position in ["Flex", "Superflex"]:
-                        valid_positions = ["RB", "WR", "TE"] if position == "Flex" else ["QB", "RB", "WR", "TE"]
-                    else:
-                        valid_positions = [position]
-
-                    # Get candidates
-                    candidates = available_players[available_players["position"].isin(valid_positions)]
-                    if candidates.empty:
-                        continue
-
-                    selected_players = candidates.nlargest(count, "GB_Projection").head(count)
-
-                    for _, player in selected_players.iterrows():
-                        lineup.append(player)
-                        total_salary += player["salary"]
-                        total_projection += player["GB_Projection"]
-                        available_players = available_players.drop(player.name)
-
-            except ValueError:
-                # Break if no further full lineups can be constructed
-                break
-
-            # Append lineup if it fits salary cap
-            if total_salary <= salary_cap:
-                lineups.append({
-                    "lineup": pd.DataFrame(lineup),
-                    "total_salary": total_salary,
-                    "salary_remaining": salary_cap - total_salary,
-                    "total_projection": total_projection
-                })
-
-            # Break if not enough players are left for another lineup
-            if len(available_players) < sum(lineup_requirements.values()):
-                break
-
-        # Display lineups
-        result = ""
-        for i, lineup_info in enumerate(lineups, 1):
-            lineup = lineup_info["lineup"]
-            result += f"<h2>Lineup {i}</h2>{lineup.to_html(index=False)}"
-            result += f"""
-                <p><strong>Total Salary:</strong> {lineup_info['total_salary']}</p>
-                <p><strong>Salary Remaining:</strong> {lineup_info['salary_remaining']}</p>
-                <p><strong>Total Projected Points:</strong> {lineup_info['total_projection']:.2f}</p>
-                <hr>
-            """
-
-        return result
-
-    return '''
-        <!doctype html>
-        <title>Generate Lineups</title>
-        <h1>Select Contest Type</h1>
-        <form method="post">
-            <label for="contest">Choose a Contest:</label>
-            <select name="contest" id="contest">
-                <option value="Spark">Spark</option>
-                <option value="Scorcher">Scorcher</option>
-                <option value="Wildfire">Wildfire</option>
-                <option value="Inferno">Inferno</option>
-            </select>
-            <input type="submit" value="Generate Lineups">
-        </form>
-    '''
+def _diagnostics(result: OptimizationResult) -> tuple[list[dict[str, Any]], list[Any]]:
+    counts = Counter(diagnostic.reason for diagnostic in result.diagnostics if diagnostic.reason != "matched")
+    grouped = [
+        {"label": DIAGNOSTIC_LABELS.get(reason, reason.replace("_", " ").capitalize()), "count": counts[reason]}
+        for reason in DIAGNOSTIC_LABELS
+        if counts.get(reason)
+    ]
+    details = [diagnostic for diagnostic in result.diagnostics if diagnostic.reason != "matched"]
+    return grouped, details
 
 
+def _render(
+    *,
+    selected_contest: str = "Spark",
+    errors: list[str] | None = None,
+    result: OptimizationResult | None = None,
+    status_code: int = 200,
+):
+    diagnostic_counts: list[dict[str, Any]] = []
+    diagnostic_details: list[Any] = []
+    if result is not None:
+        diagnostic_counts, diagnostic_details = _diagnostics(result)
+    return render_template(
+        "index.html",
+        contests=CONTESTS,
+        selected_contest=selected_contest,
+        errors=errors or [],
+        result=result,
+        diagnostic_counts=diagnostic_counts,
+        diagnostic_details=diagnostic_details,
+        infeasible_messages=INFEASIBLE_MESSAGES,
+    ), status_code
 
 
-import os
-
-if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 5000))  # Default to port 5000 if PORT not set
-    app.run(host='0.0.0.0', port=port)
+@app.template_filter("currency")
+def currency(value: Any) -> str:
+    return f"${value:,.0f}"
 
 
+@app.template_filter("decimal")
+def decimal(value: Any) -> str:
+    return f"{value:,.2f}"
 
+
+@app.template_filter("multiplier")
+def multiplier(value: Any) -> str:
+    return f"{value:,.2f}x"
+
+
+@app.get("/")
+def home():
+    return _render()
+
+
+@app.post("/optimize")
+def optimize():
+    selected_contest = request.form.get("contest", "Spark")
+    validation_errors: list[str] = []
+
+    if selected_contest not in CONTESTS:
+        validation_errors.append("Select a valid contest before optimizing.")
+
+    roster_upload = request.files.get("roster_file")
+    projection_upload = request.files.get("projection_file")
+    if roster_upload is None:
+        validation_errors.append("Choose a roster CSV file.")
+    if projection_upload is None:
+        validation_errors.append("Choose a projections CSV file.")
+
+    roster_source = projection_source = None
+    if roster_upload is not None:
+        roster_source, error = _read_upload(roster_upload, "roster")
+        if error:
+            validation_errors.append(error)
+    if projection_upload is not None:
+        projection_source, error = _read_upload(projection_upload, "projections")
+        if error:
+            validation_errors.append(error)
+
+    if validation_errors:
+        return _render(selected_contest=selected_contest, errors=validation_errors, status_code=400)
+
+    try:
+        result = optimize_lineup(roster_source, projection_source, selected_contest)
+    except Exception:
+        return _render(
+            selected_contest=selected_contest,
+            errors=["The uploaded files could not be processed. Check the CSV contents and try again."],
+            status_code=400,
+        )
+    return _render(selected_contest=selected_contest, result=result)
+
+
+@app.errorhandler(413)
+def request_too_large(_error):
+    return _render(errors=["The uploaded files are too large. Please upload smaller CSV files."], status_code=413)
+
+
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port)
