@@ -45,14 +45,16 @@ class ContestDefinition:
 
 
 CONTESTS = {
+    "Inferno": ContestDefinition("Inferno", ("QB", "RB", "RB", "WR", "WR", "TE", "Flex", "Superflex"), 30000, 70000),
+    "Volcano": ContestDefinition("Volcano", ("QB", "RB", "WR", "TE", "Flex", "Flex"), 25000, 52000),
+    "Flamethrower": ContestDefinition("Flamethrower", ("QB", "RB", "WR", "TE", "Flex", "Superflex"), 30000, 62000),
+    "Scorcher": ContestDefinition("Scorcher", ("QB", "RB", "WR", "TE", "Flex"), 20000, 40000),
+    "Primetime Pyro": ContestDefinition("Primetime Pyro", ("QB", "RB", "WR", "TE", "Flex", "Flex"), 0, 48000),
+    "Flex Appeal": ContestDefinition("Flex Appeal", ("QB", "Flex", "Flex", "Flex", "Flex", "Flex"), 25000, 52000),
+    "Wildfire": ContestDefinition("Wildfire", ("QB", "RB", "WR", "TE", "Flex", "Flex"), 25000, 52000),
     "Spark": ContestDefinition("Spark", ("QB", "RB", "WR", "TE"), 16000, 32000),
-    "Scorcher": ContestDefinition("Scorcher", ("QB", "RB", "WR", "TE", "Flex"), 18375, 36750),
-    "Wildfire": ContestDefinition("Wildfire", ("QB", "RB", "WR", "TE", "Flex", "Flex"), 24000, 48000),
-    "Flex Appeal": ContestDefinition("Flex Appeal", ("QB", "Flex", "Flex", "Flex", "Flex", "Flex"), 26000, 52000),
-    "Flamethrower": ContestDefinition("Flamethrower", ("QB", "RB", "WR", "TE", "Flex", "Superflex"), 30000, 60000),
-    "Inferno": ContestDefinition("Inferno", ("QB", "RB", "RB", "WR", "WR", "TE", "Flex", "Superflex"), 32000, 64000),
 }
-CONTEST_ALIASES = {"Volcano": "Wildfire"}
+CONTEST_ALIASES = {"Volcano": "Volcano", "Wildfire": "Volcano"}
 
 
 @dataclass(frozen=True)
@@ -292,9 +294,18 @@ def parse_projections(source: Any) -> ParseResult:
         "player_name": ("player_name", "Player"),
         "team": ("team", "Team"),
         "position": ("position", "Positions", "Position"),
-        "raw_projection": ("raw_projection", "3D Proj.", "3D Proj", "3D_Proj.", "3D_Proj", "3D Projection"),
+        "raw_projection": ("raw_projection", "ppg_projection", "ppg", "3D Proj.", "3D Proj", "3D_Proj.", "3D_Proj", "3D Projection"),
     }
     resolved, missing = _resolve_headers(headers, aliases)
+    has_first_name = False
+    if "player_name" in missing:
+        available = {_header_key(h): h for h in headers}
+        if "firstname" in available or "first_name" in available:
+            resolved["first_name"] = available.get("firstname") or available.get("first_name")
+            resolved["last_name"] = available.get("lastname") or available.get("last_name")
+            missing.remove("player_name")
+            has_first_name = True
+
     # Historical sheets carry position/team in Player, so those two headers can be inferred.
     required_missing = [name for name in missing if name not in {"team", "position"}]
     schema_errors = source_errors + ([f"projection missing columns: {', '.join(required_missing)}"] if required_missing else [])
@@ -304,14 +315,21 @@ def parse_projections(source: Any) -> ParseResult:
     rows: list[NormalizedProjection] = []
     diagnostics: list[Diagnostic] = []
     for source_row, raw in raw_rows:
-        raw_player = raw.get(resolved["player_name"], "")
-        display_name = str(raw_player or "").strip()
-        position_value = raw.get(resolved["position"]) if "position" in resolved else None
-        team_value = raw.get(resolved["team"]) if "team" in resolved else None
-        if not position_value or not team_value:
-            suffix = _projection_suffix(raw_player)
-            if suffix:
-                display_name, position_value, team_value = suffix
+        if has_first_name:
+            fn = str(raw.get(resolved["first_name"], "") or "").strip()
+            ln = str(raw.get(resolved["last_name"], "") or "").strip() if resolved.get("last_name") else ""
+            display_name = f"{fn} {ln}".strip()
+            position_value = raw.get(resolved["position"]) if "position" in resolved else None
+            team_value = raw.get(resolved["team"]) if "team" in resolved else None
+        else:
+            raw_player = raw.get(resolved["player_name"], "")
+            display_name = str(raw_player or "").strip()
+            position_value = raw.get(resolved["position"]) if "position" in resolved else None
+            team_value = raw.get(resolved["team"]) if "team" in resolved else None
+            if not position_value or not team_value:
+                suffix = _projection_suffix(raw_player)
+                if suffix:
+                    display_name, position_value, team_value = suffix
         position = normalize_position(position_value)
         team = normalize_team(team_value)
         raw_projection = _number(raw.get(resolved["raw_projection"]))
@@ -352,7 +370,7 @@ def prepare_pool(roster_source: Any, projection_source: Any) -> PreparedPool:
     exact_matches: list[tuple[NormalizedCard, NormalizedProjection]] = []
     matched_cards = 0
     for card in roster.rows:
-        if card.status.casefold() != "active":
+        if card.status.casefold() not in ("active", "listed"):
             diagnostics.append(Diagnostic("non_active", card.source_row, card.display_name, f"status={card.status}"))
             continue
 

@@ -1,0 +1,96 @@
+PASS isolated preview is the only listener on 5098 :: pid 58230
+PASS isolated preview runs from the app directory :: p58230 fcwd n/Users/shyampatel/Desktop/GB/lineup_optimizer
+PASS roster count matches the copied private input :: input 331 rows, served roster_count 331
+PASS served cards are the copied private roster, copy for copy :: 331 served cards vs 331 input rows
+PASS a fresh instance starts with no lineups :: 0 entries rendered
+PASS generation runs from the one-page workspace :: Built 8 lineups. 254 eligible cards remain available for edits.
+PASS generation produced lineups :: 8 lineups
+PASS every lineup belongs to a selected tier :: ['Flex Appeal', 'Inferno', 'Scorcher', 'Volcano']
+PASS no card copy is used twice across the plan
+PASS every card appears at most once inside its own lineup
+PASS every generated lineup respects its salary range
+PASS every generated lineup is valid
+PASS every lineup is a separate workspace entry :: 8 of 8
+PASS every player row is visible without selecting a lineup :: 50 of 50
+PASS roster panel lists every owned copy :: Showing 331 of 331 owned copies.
+PASS entries-by-contest row reflects the selected tiers :: Inferno 2/2 Volcano 2/2 Flamethrower 0/0 Scorcher 2/2 Primetime Pyro 0/0 Flex Appeal 2/2
+PASS the workspace is one page next to the roster panel
+PASS lineup search filters the workspace :: 2 entries
+PASS lineup search keeps player rows
+PASS clearing the lineup search restores every entry
+PASS a roster row filtered out of generation is still searchable :: Ashton Jeanty: Ashton Jeanty | LV · 2025 Core | 	RB	1.30x	0.00	$8,580	Unassigned	No projection 
+PASS roster position filter works :: 63 QB rows
+PASS roster assignment filter follows the live plan :: 50 rows vs 50 assigned copies
+PASS a legal cross-lineup exchange slot exists :: inferno_1/inferno_2 QB
+PASS move/exchange dialog opens from the workspace
+PASS cross-lineup exchange swaps both cards :: Inferno #2 Inferno | QB (QB) · Jaxson Dart 1.40x | Exchange
+PASS both entries report updated salaries :: inferno_1 53900->53600, inferno_2 51200->51500
+PASS both entries report updated projected scores :: inferno_1 208.56->207.1, inferno_2 193.88->195.33
+PASS both rendered entries show their new projected totals :: projected (207.1, 195.33)
+PASS both exchange destinations are locked placements
+PASS both entries stay valid after the exchange
+PASS the page shows the exchanged players in both entries
+PASS the workspace reports the exchange :: Card exchanged successfully. Updated Inferno #1 and Inferno #2.
+PASS swap dialog lists legal replacements :: 49 available replacements. All fit the salary and contest rules.
+PASS swap replaces the card and locks the destination :: RB: De'Von Achane -> Travis Etienne Jr.
+PASS clear empties an unlocked slot :: Cleared RB2. The slot is empty and stays editable.
+PASS the empty slot stays editable and names what it needs
+PASS the incomplete draft is not labelled eliminated
+PASS fill slot lists candidates again :: 46 available replacements. All fit the salary and contest rules.
+PASS the refilled slot holds the chosen card and is locked :: RB2 -> De'Von Achane
+PASS excluding an assigned player leaves the placement in place :: Player excluded. Assigned copies are marked for replacement. Protected placements keep their lock; unlock a slot to replace it.
+PASS excluding keeps the protected placement locked
+PASS the excluded athlete is recorded on the plan
+PASS including the assigned player restores them
+PASS an unassigned single-copy card has a legal slot :: AJ Barner (TE) -> inferno_1/TE
+PASS an excluded player is not offered as a replacement :: AJ Barner: 39 available replacements. All fit the salary and contest rules.
+PASS including the player restores them as a replacement :: 40 available replacements. All fit the salary and contest rules.
+PASS dashboard schedule imports for 2026 week 1 :: {'games': 16, 'generated_at': '2026-09-08T03:48:48.552Z', 'matched_players': 168, 'season': 2026, 'source': 'NFL dashboard props-board.json games', 'unmatched_players': 0, 'updated_players': 168, 'week': 1}
+PASS Thursday kickoff times reach the roster :: 24 Thursday-team players with kickoff times
+PASS a Thursday player sits in a slot with free neighbours :: inferno_2 WR Puka Nacua
+PASS the Thursday player is game-locked by the real kickoff time :: kickoff 2026-09-11T00:35:00+00:00
+PASS score dialog separates pregame projection, multiplier and score entry :: Pregame raw projection: 21.02 pts | Adjusted projection (multiplier applied once): 29.42 pts | Card multiplier: 1.40x · raw points x mult = lineup points
+PASS Final status stores raw points and applies the multiplier once :: Puka Nacua 1.4x -> 2.8 lineup points
+PASS Final status leaves zero remaining projection :: remaining_projection=0.0
+PASS the workspace shows the game lock and the raw x multiplier math
+PASS the Final slot is protected by the game lock, not a manual lock :: slot.is_locked is false; live state carries the protection
+PASS entering a score alone does not recompute payout estimates :: payout 159.0 -> 159.0
+PASS another available player can be chosen manually in the same entry :: RB: Saquon Barkley -> Alvin Kamara
+PASS the Final player is untouched by that manual choice
+PASS rebuild keeps the Final Thursday player fixed in place :: WR still Puka Nacua
+PASS rebuild changes the other unlocked slots :: changed ['Flex', 'RB2']
+PASS the Final score survives the rebuild
+PASS no automatic rescue or reallocation is produced
+PASS no payout or rescue panel appears in the primary flow
+PASS the underperforming entry is not labelled eliminated
+PASS regenerate all preserves the Final Thursday player :: inferno_2 WR -> Puka Nacua
+PASS regenerate all keeps the lineup IDs :: [] lost
+PASS regenerate all preserves every locked placement
+PASS regenerate all preserves the Final score :: 2.0
+PASS regenerate all keeps every lineup inside the selected tiers :: ['Flex Appeal', 'Inferno', 'Scorcher', 'Volcano']
+PASS regenerate all still reuses no card copy
+PASS regenerate all respects every salary range
+PASS regenerate all leaves every entry valid
+PASS every entry is visible after regeneration :: 8 of 8
+PASS save reports a saved copy :: Saved 2:04:42 AM
+PASS the saved plan lands in the isolated instance root :: /tmp/gb_p4_preview/data/saved_plans/latest_plan.json
+PASS the saved file matches the live workspace state
+PASS the unsaved edit changes the plan
+PASS load restores placements, locks, scores, exclusions and tiers
+PASS every lineup is rendered again after load :: 8 of 8
+PASS the restart comparison snapshot was written :: /tmp/gb_p4_preview/packet4_snapshot.json
+PASS no page or console script errors during the flow
+
+--- summary ---
+phase 1: 82/82 checks passed
+PASS a restarted instance starts with no active plan :: active_plan=None
+PASS the restarted instance reloads the private roster :: 331
+PASS load after restart succeeds :: Plan loaded successfully.
+PASS no saved card was missing from the roster
+PASS placements, locks, scores, exclusions and tiers match the saved snapshot
+PASS every lineup is visible after the restart :: 8 of 8
+PASS the workspace still shows the Final score math after the restart
+PASS no page or console script errors after the restart
+
+--- summary ---
+phase 2: 8/8 checks passed

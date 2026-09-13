@@ -1,0 +1,25 @@
+# V1 correction reproduction check - 2026-09-12T06:36:52Z
+# Run before the fixes: 8/15. After the fixes:
+
+--- Gap 1: explicit vs unknown remaining projection ---
+PASS generate one entry :: 200
+PASS live state exposes remaining_is_estimate :: keys=['athlete_key', 'bimodal_outcomes', 'final_points', 'game_clock', 'game_status', 'is_locked', 'kickoff_time', 'live_points', 'player_name', 'position', 'profile_type', 'remaining_is_estimate', 'remaining_projection', 'remaining_stdev', 'team']
+PASS unknown in-progress does not report a supplied estimate :: value=False
+PASS in-progress unknown does not add the seeded projection :: effective_mean=15.0 expected 15.0
+PASS explicit zero is a known estimate :: flag=True
+PASS explicit zero keeps banked live points only :: effective_mean=15.0
+PASS positive estimate is added once :: effective_mean=21.0 expected 21.0
+PASS save/load keeps the explicit estimate across a restart :: flag=True
+PASS save/load keeps the estimate value :: value=4.0
+--- Gap 2: first manual entry without generation ---
+PASS no active plan before the first manual entry
+PASS first manual add succeeds without generation :: 200 Added an empty Scorcher entry (5 slots to fill).
+PASS manual plan records the selected tier :: {'contest_distribution': {'Scorcher': 2}}
+PASS manual plan holds one draft entry :: count=1
+--- Gap 2: selected entry count below the contest maximum ---
+PASS add past the selected count is rejected :: 400 Contest 'Scorcher' already has 1 of 1 allowed entries.
+PASS rejected add leaves the plan count intact :: count=1
+PASS zero selected count is rejected :: 400 Select at least one Scorcher entry before adding a draft.
+PASS unselected tier is rejected :: 400 'Volcano' is not one of the selected contest tiers.
+
+17/17 checks passed

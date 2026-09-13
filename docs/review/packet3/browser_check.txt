@@ -1,0 +1,60 @@
+PASS all lineups rendered :: 10 of 10
+PASS every lineup slot row visible :: 61 of 61
+PASS no placeholder empty state
+PASS full roster panel rendered :: 322 of 322
+PASS roster count line :: Showing 322 of 322 owned copies.
+PASS roster shows assignments :: 61 assigned rows
+PASS inline game-status control per filled slot :: 61 selects for 61 filled slots
+PASS save badge present :: No saved copy
+PASS lineup search filters list :: 2 entries match Inferno
+PASS lineup search keeps rows
+PASS clearing search restores all
+PASS roster position filter works :: 62 QB rows
+PASS roster assignment filter works
+PASS slot lock persists :: locked QB; locks now ['QB']
+PASS unsaved indicator after edit :: Unsaved changes
+PASS slot unlock persists :: locks now []
+PASS move dialog opens
+PASS move dialog lists destinations :: 61 destinations
+PASS move dialog explains blocked destinations :: 52 blocked reasons
+PASS move dialog blocks the source slot
+PASS move/exchange applied to both entries :: Inferno #2 Inferno | QB (QB) · Jaxson Dart 1.40x | Exchange
+PASS feedback describes the move :: Card exchanged successfully. Updated Inferno #1 and Inferno #2.
+PASS no illegal destination is offered as enabled
+PASS swap dialog opens
+PASS swap candidates listed :: 41 candidates
+PASS swap applied
+PASS swap destination locked to new card :: locks: ['QB']
+PASS unlocked slots remain after the swap :: 7 unlocked rows
+PASS clear leaves an editable empty slot :: Cleared RB. The slot is empty and stays editable.
+PASS clear names what the empty slot needs :: <Empty slot> · needs RB
+PASS incomplete draft is not labelled eliminated
+PASS score dialog opens
+PASS score dialog shows pregame and multiplier :: Pregame raw projection: 19.28 pts | Adjusted projection (multiplier applied once): 26.99 pts | Card multiplier: 1.40x · raw points x mult = lineup points
+PASS score dialog closes after save
+PASS workspace shows live status :: In progress saved. Multiplier applies once to the raw points you entered.
+PASS unknown remaining is labelled :: 2 unknown cells
+PASS final actual shows raw x multiplier :: 12.0 x1.40 = 16.8; 3.0 x1.40 = 4.2; -
+PASS exclude sends a message :: Player excluded. Assigned copies are marked for replacement. Protected placements keep their lock; unlock a slot to replace it.
+PASS excluded card stays in the roster list :: 4 excluded rows
+PASS include restores the card :: Player restored to the pool. Protected placements keep their lock; unlock a slot to replace it.
+PASS save marks the plan saved :: Saved 10:10:44 AM
+PASS load restores the plan :: Plan loaded successfully. Locks, scores and exclusions match the saved copy.
+PASS lineups still all rendered after load
+PASS generation shows pending state :: Generating lineups...
+PASS generation finishes inline without leaving the page :: Built 10 lineups. 236 eligible cards remain available for edits.
+PASS workspace still shows every lineup after regenerate :: 10 entries
+PASS add empty entry works :: option Primetime Pyro: Added an empty Primetime Pyro entry (6 slots to fill). Fill its slots with Swap or Move.
+PASS incomplete draft is labelled not eliminated
+PASS payout panels are collapsed out of the primary flow
+PASS advanced disclosure is closed on load :: payout grid hidden while collapsed
+PASS narrow layout renders lineups :: 11 entries
+PASS narrow layout contains wide tables in scroll wrappers :: {"wide": 11, "docOverflow": 0, "clipped": 0}
+PASS narrow layout has no clipped buttons :: {"wide": 11, "docOverflow": 0, "clipped": 0}
+PASS no page errors in narrow layout
+PASS search is keyboard reachable :: lineup-search
+PASS roster search is keyboard reachable :: roster-search
+PASS no console errors on the workspace
+
+--- summary ---
+57/57 checks passed

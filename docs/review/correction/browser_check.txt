@@ -1,0 +1,41 @@
+# V1 correction browser check - 2026-09-12T06:36:01Z
+
+--- Phase 1: first manual draft (gap 2) ---
+PASS no active plan on the fresh instance
+PASS the add-entry picker is usable with no plan
+PASS picker lists the selected tiers :: Inferno (0/8), Volcano (0/6), Flamethrower (0/6)
+PASS first manual draft created without generation :: 1 entries
+PASS manual plan records the selected tier :: {'contest_distribution': {'Flamethrower': 6, 'Flex Appeal': 6, 'Inferno': 8, 'Primetime Pyro': 6, 'Scorcher': 1, 'Volcano': 6}}
+PASS draft is labelled incomplete
+PASS draft is not labelled eliminated
+PASS add past the selected count is rejected :: Contest 'Scorcher' already has 1 of 1 allowed entries.
+PASS rejection explains the selected limit :: Contest 'Scorcher' already has 1 of 1 allowed entries.
+PASS raising the selected count allows another draft :: 2 entries
+PASS manual draft fills slot by slot
+PASS two slots hold cards :: 2 filled
+--- Phase 1: remaining estimate state (gap 1) ---
+PASS blank estimate is stored as unknown :: flag=False
+PASS workspace shows unknown remaining after a blank save
+PASS unknown remaining survives reload :: Scorcher #1 | Scorcher | Incomplete draft | Salary $14,800 of $40,000 (37%) | Remaining salary $25,200 | Projected 65.8 
+PASS reopened dialog keeps the estimate blank :: value=''
+PASS explicit zero is a known estimate :: flag=True value=0.0
+PASS explicit zero survives reload
+PASS positive estimate is stored and known :: flag=True value=4.0
+PASS clearing the estimate returns it to unknown
+PASS re-supplied estimate is known again
+PASS final keeps zero remaining projection :: status=FINAL remaining=0.0
+PASS save confirms the plan is on disk :: Saved 2:36:18 AM
+phase 1 estimate athlete for phase 2: lamarjackson
+phase 1 final athlete for phase 2: jahmyrgibbs
+
+23/23 checks passed
+
+instance root /tmp/gb_correction_preview on port 5097 :: roster 331 cards :: active plan False
+--- Phase 2: after an isolated restart ---
+PASS restart starts with no in-memory plan
+PASS load restores the saved plan :: 2 entries
+PASS explicit estimate survives the restart :: 1 players with a 6.5 explicit estimate
+PASS final score and zero remaining survive the restart :: 1 final players at 12.0
+PASS workspace renders the loaded entries :: 2 entries
+
+5/5 checks passed

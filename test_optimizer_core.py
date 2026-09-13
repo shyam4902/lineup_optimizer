@@ -183,6 +183,14 @@ class OptimizerCoreTests(unittest.TestCase):
         result_two = optimize_lineup(self.cards, self.projections, "Spark")
         self.assertEqual(result_one.lineup, result_two.lineup)
 
+    def test_listed_cards_are_eligible(self):
+        cards = [dict(row, status="Listed") for row in self.cards[:4]]
+        result = optimize_lineup(cards, self.projections[:4], "Spark")
+        self.assertTrue(result.feasible)
+        self.assertEqual(len(result.lineup), 4)
+        self.assertNotIn("non_active", result.diagnostics_by_reason)
+
 
 if __name__ == "__main__":
     unittest.main()
+

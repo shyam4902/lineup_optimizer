@@ -3,18 +3,27 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>GameBlazers Football Lineup Optimizer</title>
+    <title>GameBlazers Weekly Lineup Planner</title>
     <style>
         :root {
             color-scheme: dark;
-            --background: #080a0c;
-            --surface: #15191d;
-            --surface-muted: #20262b;
-            --border: #354049;
-            --text: #f3f5f6;
-            --muted: #aab5bc;
-            --accent: #39ff14;
-            --danger: #ff8c8c;
+            --background: #0b0f17;
+            --surface: #131b2a;
+            --surface-muted: #1c263b;
+            --surface-hover: #222e47;
+            --border: rgba(255, 255, 255, 0.08);
+            --border-strong: rgba(255, 255, 255, 0.16);
+            --text: #f3f5f8;
+            --text-secondary: #94a3b8;
+            --accent: #10b981;
+            --accent-dim: rgba(16, 185, 129, 0.14);
+            --accent-glow: rgba(16, 185, 129, 0.25);
+            --danger: #f87171;
+            --danger-bg: rgba(248, 113, 113, 0.12);
+            --warning: #fbbf24;
+            --warning-bg: rgba(251, 191, 36, 0.12);
+            --info: #38bdf8;
+            --info-bg: rgba(56, 189, 248, 0.12);
         }
 
         * { box-sizing: border-box; }
@@ -22,166 +31,3057 @@
             margin: 0;
             background: var(--background);
             color: var(--text);
-            font: 16px/1.5 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            font: 14px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            font-variant-numeric: tabular-nums;
+            letter-spacing: -0.01em;
         }
-        main { width: min(100% - 2rem, 1100px); margin: 0 auto; padding: 2.5rem 0 4rem; }
-        h1, h2, h3 { line-height: 1.2; }
-        h1 { margin-bottom: .5rem; font-size: clamp(1.8rem, 4vw, 2.7rem); }
-        h2 { margin-top: 0; }
-        h3 { margin-bottom: .4rem; }
-        p { color: var(--muted); }
-        .intro { max-width: 740px; margin-bottom: 1.75rem; }
-        .card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 1.25rem; margin-top: 1rem; }
-        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
-        label { display: block; font-weight: 700; margin-bottom: .4rem; }
-        input[type="file"], select {
-            width: 100%; min-height: 2.75rem; padding: .55rem .65rem;
-            background: var(--surface-muted); color: var(--text); border: 1px solid var(--border); border-radius: 6px;
+        main { width: min(100% - 2rem, 1720px); margin: 0 auto; padding: 2rem 0 5rem; }
+        
+        h1, h2, h3, h4 { margin-top: 0; color: #fff; font-weight: 600; line-height: 1.25; }
+        h1 { font-size: 1.75rem; }
+        p { color: var(--text-secondary); margin: .35rem 0; }
+
+        /* Top Header & Context Actions */
+        .app-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+            gap: 1rem;
         }
-        input:focus, select:focus, button:focus, summary:focus { outline: 3px solid rgba(57, 255, 20, .45); outline-offset: 2px; }
-        .field-help { margin: .4rem 0 0; font-size: .9rem; }
-        .form-actions { display: flex; align-items: end; gap: 1rem; margin-top: 1.25rem; }
-        button { min-height: 2.75rem; padding: .6rem 1rem; border: 0; border-radius: 6px; background: var(--accent); color: #071007; cursor: pointer; font-weight: 800; }
-        button:hover { filter: brightness(.9); }
-        .notice { border-left: 4px solid var(--danger); color: var(--danger); background: rgba(255, 140, 140, .08); padding: .8rem 1rem; margin: 1rem 0; }
-        .notice ul { margin: 0; padding-left: 1.25rem; }
-        .success { border-left-color: var(--accent); color: var(--text); }
-        .summary-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: .75rem; margin: 1rem 0 1.25rem; }
-        .metric { background: var(--surface-muted); border-radius: 6px; padding: .75rem; }
-        .metric dt { color: var(--muted); font-size: .88rem; }
-        .metric dd { margin: .15rem 0 0; font-size: 1.15rem; font-weight: 800; }
-        .table-wrap { overflow-x: auto; }
-        table { width: 100%; min-width: 760px; border-collapse: collapse; }
-        th, td { padding: .65rem .5rem; border-bottom: 1px solid var(--border); text-align: left; white-space: nowrap; }
-        th { color: var(--muted); font-size: .85rem; }
+        .app-header .title-wrap { max-width: 720px; }
+        .app-header .title-wrap p { font-size: 0.95rem; margin-top: 0.25rem; }
+
+        /* Primary View Switcher */
+        .nav-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 0.35rem 0.5rem;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+        }
+        .pill-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.35rem;
+            align-items: center;
+        }
+        .pill-btn {
+            background: transparent;
+            color: var(--text-secondary);
+            border: 0;
+            border-radius: 7px;
+            padding: 0.5rem 1rem;
+            font-size: 0.88rem;
+            font-weight: 500;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            transition: all 0.15s ease;
+        }
+        .pill-btn:hover {
+            color: var(--text);
+            background: var(--surface-muted);
+        }
+        .pill-btn.active {
+            background: var(--accent);
+            color: #052115;
+            font-weight: 600;
+        }
+
+        /* Generic Card Container */
+        .card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.25rem;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+        }
+        .card-header h2, .card-header h3 { margin: 0; }
+
+        /* Grids */
+        .grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1.25rem; }
+        .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.25rem; }
+        .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.25rem; }
+
+        /* Metric Tiles */
+        .metric-tile {
+            background: var(--surface-muted);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1rem 1.25rem;
+        }
+        .metric-tile dt {
+            color: var(--text-secondary);
+            font-size: 0.82rem;
+            font-weight: 500;
+            margin-bottom: 0.35rem;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+        .metric-tile dd {
+            margin: 0;
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        /* Badges */
+        .badge {
+            display: inline-block;
+            padding: 0.2rem 0.55rem;
+            border-radius: 5px;
+            font-size: 0.76rem;
+            font-weight: 600;
+            letter-spacing: 0.02em;
+        }
+        .badge-success { background: var(--accent-dim); color: var(--accent); }
+        .badge-danger { background: var(--danger-bg); color: var(--danger); }
+        .badge-warning { background: var(--warning-bg); color: var(--warning); }
+        .badge-info { background: var(--info-bg); color: var(--info); }
+        .badge-outline { background: transparent; border: 1px solid var(--border); color: var(--text-secondary); }
+        .badge-inferno { background: rgba(239, 68, 68, 0.16); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.35); }
+        .badge-volcano { background: rgba(249, 115, 22, 0.16); color: #fb923c; border: 1px solid rgba(249, 115, 22, 0.35); }
+        .badge-flamethrower { background: rgba(234, 179, 8, 0.16); color: #facc15; border: 1px solid rgba(234, 179, 8, 0.35); }
+        .badge-scorcher { background: rgba(245, 158, 11, 0.16); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.35); }
+        .badge-pyro { background: rgba(168, 85, 247, 0.16); color: #c084fc; border: 1px solid rgba(168, 85, 247, 0.35); }
+        .badge-flex { background: rgba(236, 72, 153, 0.16); color: #f472b6; border: 1px solid rgba(236, 72, 153, 0.35); }
+        .badge-wildfire { background: rgba(16, 185, 129, 0.16); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.35); }
+
+        /* Forms, Buttons, Inputs */
+        label {
+            display: block;
+            font-weight: 500;
+            font-size: 0.85rem;
+            margin-bottom: 0.4rem;
+            color: var(--text-secondary);
+        }
+        input[type="text"], input[type="number"], input[type="file"], select {
+            width: 100%;
+            min-height: 2.5rem;
+            padding: 0.5rem 0.75rem;
+            background: var(--surface-muted);
+            color: var(--text);
+            border: 1px solid var(--border);
+            border-radius: 7px;
+            font: inherit;
+            transition: border-color 0.15s ease;
+        }
+        input:focus, select:focus, button:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 1px var(--accent);
+        }
+        button {
+            min-height: 2.4rem;
+            padding: 0.45rem 1rem;
+            border: 0;
+            border-radius: 7px;
+            background: var(--accent);
+            color: #052115;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.88rem;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.4rem;
+            transition: all 0.15s ease;
+        }
+        button:hover { filter: brightness(1.08); }
+        button.secondary {
+            background: var(--surface-muted);
+            color: var(--text);
+            border: 1px solid var(--border);
+            font-weight: 500;
+        }
+        button.secondary:hover {
+            background: var(--surface-hover);
+            border-color: var(--border-strong);
+        }
+        button.danger {
+            background: var(--danger-bg);
+            color: var(--danger);
+            border: 1px solid rgba(248, 113, 113, 0.3);
+        }
+        button.danger:hover {
+            background: var(--danger);
+            color: #1a0505;
+        }
+        button.small {
+            min-height: 1.9rem;
+            padding: 0.2rem 0.65rem;
+            font-size: 0.8rem;
+        }
+
+        /* Status Alerts */
+        .alert {
+            border-left: 3px solid var(--danger);
+            color: var(--text);
+            background: var(--danger-bg);
+            padding: 0.85rem 1.15rem;
+            border-radius: 6px;
+            margin-bottom: 1.25rem;
+            font-size: 0.9rem;
+        }
+        .alert.success { border-left-color: var(--accent); background: var(--accent-dim); }
+        .alert.info { border-left-color: var(--info); background: var(--info-bg); }
+
+        /* Tables */
+        .table-wrap { overflow-x: auto; width: 100%; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+        th, td { padding: 0.65rem 0.75rem; border-bottom: 1px solid var(--border); text-align: left; }
+        th {
+            color: var(--text-secondary);
+            font-size: 0.76rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
         td.numeric, th.numeric { text-align: right; }
-        .processing-summary { display: grid; grid-template-columns: repeat(4, 1fr); gap: .5rem; margin-top: 1.5rem; }
-        .processing-summary div { background: var(--surface-muted); padding: .65rem; border-radius: 6px; }
-        .processing-summary dt { color: var(--muted); font-size: .82rem; }
-        .processing-summary dd { margin: .1rem 0 0; font-weight: 800; }
-        .diagnostics { margin-top: 1rem; }
-        .diagnostics ul { columns: 2; padding-left: 1.25rem; }
-        .technical { color: var(--muted); font-size: .85rem; }
-        @media (max-width: 680px) {
-            main { width: min(100% - 1rem, 1100px); padding-top: 1.25rem; }
-            .form-grid, .summary-grid, .processing-summary { grid-template-columns: 1fr; }
-            .form-actions { display: block; }
-            button { width: 100%; margin-top: .75rem; }
-            .diagnostics ul { columns: 1; }
+        tr:hover td { background: rgba(255, 255, 255, 0.018); }
+
+        /* Single-page workspace: every lineup expanded, roster alongside */
+        .workspace-toolbar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+            align-items: center;
+            justify-content: space-between;
         }
+        .toolbar-group { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; }
+        .toolbar-group label { margin-bottom: 0; }
+        .toolbar-group select { width: auto; min-width: 9rem; min-height: 2.1rem; }
+        .workspace-status { font-size: 0.82rem; color: var(--text-secondary); }
+        .workspace-status[data-tone="pending"] { color: var(--warning); }
+        .workspace-status[data-tone="success"] { color: var(--accent); }
+        .workspace-status[data-tone="error"] { color: var(--danger); }
+        .workspace-layout {
+            display: grid;
+            grid-template-columns: minmax(0, 1.55fr) minmax(420px, 1.35fr);
+            gap: 1.25rem;
+            align-items: start;
+        }
+        .workspace-lineups { display: flex; flex-direction: column; gap: 1.25rem; min-width: 0; }
+        .lineup-entry { margin-bottom: 0; padding: 1rem 1.15rem; }
+        .lineup-entry.status-locked { border-left: 3px solid var(--info); }
+        .lineup-entry.status-incomplete { border-left: 3px solid var(--warning); }
+        .lineup-entry.status-invalid { border-left: 3px solid var(--danger); }
+        .lineup-entry-head { display: flex; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
+        .lineup-entry-title { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.35rem; }
+        .lineup-entry-title h3 { margin: 0; font-size: 1.1rem; }
+        .lineup-metrics { display: flex; flex-wrap: wrap; gap: 0.3rem 1.1rem; font-size: 0.82rem; color: var(--text-secondary); }
+        .lineup-metrics strong { color: var(--text); }
+        .lineup-actions { display: flex; flex-wrap: wrap; gap: 0.35rem; align-items: flex-start; }
+        .lineup-slot-table { width: 100%; font-size: 0.8rem; }
+        .lineup-slot-table th { padding: 0.35rem 0.25rem; font-size: 0.69rem; letter-spacing: normal; white-space: nowrap; }
+        .lineup-slot-table td { padding: 0.35rem 0.25rem; vertical-align: middle; }
+        .lineup-slot-table .status-cell select {
+            width: auto;
+            min-height: 1.45rem;
+            height: 1.45rem;
+            padding: 0.05rem 0.25rem;
+            font-size: 0.72rem;
+            border-radius: 4px;
+        }
+        .slot-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.15rem 0.2rem;
+            justify-content: flex-end;
+            width: 205px;
+            min-width: 205px;
+        }
+        .slot-actions button {
+            padding: 0.08rem 0.22rem;
+            font-size: 0.67rem;
+            font-weight: 500;
+            gap: 0;
+            min-height: 1.3rem;
+            height: 1.3rem;
+            line-height: 1.2;
+            white-space: nowrap;
+        }
+        .cell-note { font-size: 0.72rem; color: var(--warning); }
+        .roster-panel {
+            position: sticky;
+            top: 1rem;
+            display: flex;
+            flex-direction: column;
+            max-height: calc(100vh - 2rem);
+            margin-bottom: 0;
+            min-width: 0;
+            padding: 0.85rem;
+        }
+        .roster-panel .table-wrap {
+            overflow: auto;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            background: var(--surface);
+        }
+        .roster-filters {
+            display: grid;
+            gap: 0.35rem;
+            margin-bottom: 0.75rem;
+        }
+        .roster-filters label {
+            font-size: 0.72rem;
+            color: var(--text-secondary);
+            margin-bottom: 0.12rem;
+        }
+        .roster-filters input, .roster-filters select {
+            min-height: 1.95rem;
+            height: 1.95rem;
+            padding: 0.2rem 0.5rem;
+            font-size: 0.8rem;
+            border-radius: 5px;
+        }
+        .roster-filters .filter-row {
+            display: flex;
+            gap: 0.45rem;
+        }
+        .roster-filters .filter-row > * { min-width: 0; }
+        #roster-panel-count {
+            margin: 0 0 0.5rem 0;
+            font-size: 0.76rem;
+            color: var(--text-secondary);
+        }
+
+        /* Roster Table Styling */
+        .roster-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.78rem;
+        }
+        .roster-table th {
+            position: sticky;
+            top: 0;
+            z-index: 3;
+            background: var(--surface);
+            padding: 0.42rem 0.35rem;
+            font-size: 0.72rem;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            color: var(--text-secondary);
+            border-bottom: 1px solid var(--border);
+            white-space: nowrap;
+            box-shadow: 0 1px 0 var(--border);
+        }
+        .roster-table th.sortable {
+            cursor: pointer;
+            user-select: none;
+            transition: color 0.15s ease, background 0.15s ease;
+        }
+        .roster-table th.sortable:hover {
+            color: var(--text);
+            background: var(--surface-muted);
+        }
+        .roster-table th.sortable:focus-visible {
+            outline: 2px solid var(--accent);
+            outline-offset: -2px;
+        }
+        .roster-table th .sort-icon {
+            display: inline-block;
+            margin-left: 0.2rem;
+            font-size: 0.68rem;
+            opacity: 0.35;
+            transition: opacity 0.15s ease, color 0.15s ease;
+        }
+        .roster-table th.is-sorted .sort-icon {
+            opacity: 1;
+            color: var(--accent);
+        }
+        .roster-table td {
+            padding: 0.32rem 0.25rem;
+            font-size: 0.78rem;
+            vertical-align: middle;
+            border-bottom: 1px solid var(--border);
+            white-space: nowrap;
+        }
+        .roster-table td.numeric {
+            text-align: right;
+            font-variant-numeric: tabular-nums;
+        }
+        .roster-table tr:hover td {
+            background: rgba(255, 255, 255, 0.02);
+        }
+        .roster-row.is-assigned td {
+            background: rgba(16, 185, 129, 0.04);
+        }
+        .roster-row.is-assigned:hover td {
+            background: rgba(16, 185, 129, 0.07);
+        }
+        .roster-row.is-unavailable td, .roster-row.is-excluded td {
+            color: var(--text-secondary);
+        }
+        .roster-table td button.secondary.small {
+            padding: 0.12rem 0.38rem;
+            font-size: 0.68rem;
+            min-height: 1.4rem;
+            border-radius: 4px;
+        }
+        .status-pill {
+            display: inline-block;
+            padding: 0.12rem 0.42rem;
+            border-radius: 4px;
+            font-size: 0.72rem;
+            font-weight: 500;
+            line-height: 1.2;
+            white-space: nowrap;
+        }
+        .status-pill.status-avail { color: var(--text-secondary); background: rgba(255, 255, 255, 0.04); }
+        .status-pill.status-assigned { color: var(--accent); background: rgba(16, 185, 129, 0.1); }
+        .status-pill.status-excluded { color: #f59e0b; background: rgba(245, 158, 11, 0.1); }
+        .status-pill.status-ineligible { color: #ef4444; background: rgba(239, 68, 68, 0.1); }
+        .status-pill.status-locked { color: #38bdf8; background: rgba(56, 189, 248, 0.1); }
+        .status-pill.status-nomatch { color: var(--text-secondary); background: rgba(255, 255, 255, 0.05); }
+        .destination-list { display: flex; flex-direction: column; gap: 0.4rem; }
+        .destination-row {
+            display: flex; justify-content: space-between; align-items: center; gap: 0.75rem;
+            padding: 0.5rem 0.65rem; background: var(--surface-muted);
+            border: 1px solid var(--border); border-radius: 7px;
+        }
+        .destination-row.is-blocked { opacity: 0.6; }
+        .destination-reason { font-size: 0.74rem; color: var(--danger); }
+        .score-readout { background: var(--surface-muted); border-radius: 7px; padding: 0.6rem 0.75rem; font-size: 0.82rem; margin-bottom: 1rem; }
+        .salary-bar-container {
+            width: 100%;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 3px;
+            overflow: hidden;
+            margin-top: 0.45rem;
+        }
+        .salary-bar-fill {
+            height: 100%;
+            background: var(--accent);
+            border-radius: 3px;
+            transition: width 0.3s ease;
+        }
+
+        /* Slot Table Aesthetics */
+        .slot-pill {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 2rem;
+            width: auto;
+            height: 1.35rem;
+            padding: 0.1rem 0.35rem;
+            border-radius: 5px;
+            font-weight: 700;
+            font-size: 0.7rem;
+            letter-spacing: 0.03em;
+        }
+        .slot-pill.pos-QB { background: rgba(168, 85, 247, 0.18); color: #c084fc; border: 1px solid rgba(168, 85, 247, 0.3); }
+        .slot-pill.pos-RB { background: rgba(59, 130, 246, 0.18); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.3); }
+        .slot-pill.pos-WR { background: rgba(16, 185, 129, 0.18); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); }
+        .slot-pill.pos-TE { background: rgba(245, 158, 11, 0.18); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); }
+        .slot-pill.pos-FLEX { background: rgba(236, 72, 153, 0.18); color: #f472b6; border: 1px solid rgba(236, 72, 153, 0.3); }
+        .slot-pill.pos-SF, .slot-pill.pos-SUPERFLEX { background: rgba(99, 102, 241, 0.18); color: #818cf8; border: 1px solid rgba(99, 102, 241, 0.3); }
+
+        .team-chip {
+            display: inline-block;
+            padding: 0.1rem 0.35rem;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+        }
+        .mult-badge {
+            display: inline-block;
+            padding: 0.1rem 0.35rem;
+            background: var(--accent-dim);
+            border-radius: 4px;
+            font-weight: 600;
+            color: var(--accent);
+            font-size: 0.72rem;
+        }
+
+        /* Upload Area */
+        .upload-dropzone {
+            border: 2px dashed var(--border);
+            border-radius: 10px;
+            padding: 2.25rem 1.5rem;
+            text-align: center;
+            cursor: pointer;
+            background: var(--surface-muted);
+            transition: all 0.15s ease;
+        }
+        .upload-dropzone:hover {
+            border-color: var(--accent);
+            background: rgba(16, 185, 129, 0.04);
+        }
+
+        /* Modal Overlay */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(4px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            padding: 1.5rem;
+        }
+        .modal {
+            background: var(--surface);
+            border: 1px solid var(--border-strong);
+            border-radius: 12px;
+            width: min(100%, 760px);
+            max-height: 85vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+        }
+        .modal-header {
+            padding: 1.15rem 1.5rem;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .modal-body {
+            padding: 1.5rem;
+            overflow-y: auto;
+            flex: 1;
+        }
+        .modal-footer {
+            padding: 1rem 1.5rem;
+            border-top: 1px solid var(--border);
+            display: flex;
+            justify-content: flex-end;
+            gap: 0.5rem;
+        }
+
+        .hidden { display: none !important; }
+        .advanced-block { margin-bottom: 1.5rem; }
+        .advanced-block > summary { cursor: pointer; color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 1rem; }
+
+        @media (max-width: 1100px) {
+            .workspace-layout { grid-template-columns: 1fr; }
+            .roster-panel { position: static; max-height: none; }
+        }
+        @media (max-width: 900px) {
+            .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
+        }
+        .contest-choices { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .65rem; margin: 1.25rem 0; }
+        .contest-choice { background: var(--surface-muted); padding: .9rem 1rem; border-radius: 8px; }
+        .contest-choice > label:first-child { color: var(--text); font-size: .95rem; display: flex; gap: .5rem; align-items: center; }
+        .contest-choice p { font-size: .8rem; }
+        .contest-choice:has(input[type=checkbox]:not(:checked)) { opacity: .55; }
+        .entry-limit { display: flex; align-items: center; gap: .5rem; margin: .7rem 0 0; }
+        .entry-limit input { width: 4.3rem; min-height: 2rem; padding: .2rem .4rem; }
+        .build-note, .muted { font-size: .78rem; color: var(--text-secondary); }
+        .viewer-toolbar { display: flex; justify-content: space-between; gap: 1rem; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; }
+        #workspace-feedback:empty { display: none; }
+        .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+        button:focus-visible, summary:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+        @media (max-width: 700px) { .contest-choices { grid-template-columns: repeat(2, minmax(0, 1fr)); } main { width: calc(100% - 1rem); } .card { padding: 1rem; } .lineup-actions, .slot-actions { justify-content: flex-start; } }
     </style>
 </head>
 <body>
 <main>
-    <header>
-        <h1>GameBlazers Football Lineup Optimizer</h1>
-        <p class="intro">Upload your GameBlazers roster export and raw, unmultiplied weekly projections. The optimizer matches eligible cards, applies each card multiplier once, and returns one complete optimal lineup for the selected contest.</p>
+    <!-- Header -->
+    <header class="app-header">
+        <div class="title-wrap">
+            <h1>GameBlazers Weekly Lineup Planner</h1>
+            <p>Build your lineups, then manage swaps as games unfold.</p>
+        </div>
+        <div style="display: flex; gap: 0.5rem; align-items: center;">
+            <button class="secondary small" onclick="openRulesModal()">Contest rules</button>
+            <button class="secondary small" onclick="openRequirementsModal()">Data Requirements</button>
+        </div>
     </header>
 
-    {% if errors %}
-    <section class="notice" role="alert" aria-label="Input errors">
-        <ul>
-        {% for error in errors %}<li>{{ error }}</li>{% endfor %}
-        </ul>
+    {% if private_preview %}
+    <section id="roster-onboarding" class="card{% if roster_card_count %} hidden{% endif %}" style="margin-bottom: 1rem; padding: 1rem;" aria-label="Getting started">
+        <h2>Your private workspace</h2>
+        <p>Upload your GameBlazers roster CSV to start. {% if snapshot %}Weekly projections are ready.{% endif %} Your cards and lineups are separate from other workspaces.</p>
+        <label for="friend-roster-upload">Your roster CSV</label>
+        <input id="friend-roster-upload" type="file" accept=".csv,text/csv" onchange="uploadRosterCSV(event)">
+        <p>Everything on the workspace page saves together with Save plan, including lineups, locks, scores and kickoff times. Load plan restores them after a server restart. Swaps still need to be entered in GameBlazers.</p>
+        <p>Before relying on kickoff locks, open In-week scores and import the dashboard kickoff times for your selected week.</p>
     </section>
     {% endif %}
 
-    <section class="card" aria-labelledby="upload-heading">
-        <h2 id="upload-heading">Build one lineup</h2>
-        <p>Only cards with <strong>Active</strong> status, a matched projection, and a positive raw projection are eligible.</p>
-        <form action="{{ url_for('optimize') }}" method="post" enctype="multipart/form-data">
-            <div class="form-grid">
-                <div>
-                    <label for="roster_file">GameBlazers roster CSV</label>
-                    <input id="roster_file" name="roster_file" type="file" accept=".csv,text/csv" required>
-                    <p class="field-help">Required fields include player, team, position, multiplier, salary, and status.</p>
+    <p id="workspace-feedback" role="status" aria-live="polite"></p>
+    <!-- Main Navigation Bar -->
+    <nav class="nav-bar">
+        <div class="pill-group">
+            <button id="nav-overview" class="pill-btn active" onclick="switchSection('overview')">Workspace</button>
+            <button id="nav-live" class="pill-btn" onclick="switchSection('live')">In-week scores</button>
+            <button id="nav-data" class="pill-btn" onclick="switchSection('data')">Roster &amp; projections</button>
+        </div>
+        <div class="pill-group">
+            <button id="nav-optimizer" class="pill-btn" onclick="switchSection('optimizer')">Single Lineup Solver</button>
+        </div>
+    </nav>
+
+    <!-- SECTION 1: WORKSPACE - EVERY LINEUP EXPANDED, FULL ROSTER ALONGSIDE -->
+    <div id="sec-overview">
+        <section id="generation-section" class="card">
+            <div class="card-header">
+                <div><h2>Build your weekly lineups</h2><p>Select contests. Use your available cards to build as many entries as fit, ranked by projected points.</p></div>
+                <button class="secondary" onclick="focusRosterPanel()">Find a player</button>
+            </div>
+            <div class="contest-choices">
+            {% for name, cfg in planner_contests.items() if cfg.enabled and cfg.eligible and name != 'Wildfire' %}
+                <div class="contest-choice">
+                    <label><input type="checkbox" class="contest-selected" data-contest="{{ name }}" checked> {{ name }}</label>
+                    <p>${{ '{:,}'.format(cfg.minimum_salary) }} to ${{ '{:,}'.format(cfg.maximum_salary) }} · {{ cfg.slots|length }} players</p>
+                    <label class="entry-limit">Up to <input aria-label="{{ name }} entry limit" class="contest-limit" data-contest="{{ name }}" type="number" min="0" max="{{ cfg.default_entry_limit }}" value="{{ cfg.default_entry_limit }}"> entries</label>
                 </div>
-                <div>
-                    <label for="projection_file">Raw weekly projections CSV</label>
-                    <input id="projection_file" name="projection_file" type="file" accept=".csv,text/csv" required>
-                    <p class="field-help">Use raw projection values, not an already multiplier-adjusted total.</p>
+            {% endfor %}
+            </div>
+            <button id="generate-plan-btn" onclick="generateWeeklyPlan()" {% if not roster_card_count %}disabled{% endif %}>Generate all lineups</button>
+            <p id="generation-feedback" role="status" aria-live="polite">{% if roster_card_count %}{{ roster_card_count }} cards loaded. Every eligible card with a positive projection is considered.{% else %}Upload your roster to start.{% endif %}</p>
+            <p class="build-note">Your locked players stay in place. You can manually move players after kickoff to match your real entries. Salary, positions, collections and card ownership must still fit.</p>
+        </section>
+
+        <div class="card workspace-toolbar" role="group" aria-label="Lineup actions">
+            <div class="toolbar-group">
+                <label for="add-entry-contest">Add entry in</label>
+                <select id="add-entry-contest" aria-label="Contest for the new empty entry"></select>
+                <button class="secondary small" onclick="addEntry()">Add empty entry</button>
+                <button class="secondary small" onclick="rebuildAllLineups()">Rebuild all unlocked</button>
+            </div>
+            <div class="toolbar-group">
+                <label for="lineup-search">Find lineup</label>
+                <input id="lineup-search" type="text" placeholder="Player, slot or contest" oninput="renderLineupsList()" style="min-width: 12rem;">
+                <select id="lineup-contest-filter" aria-label="Filter lineups by contest" onchange="renderLineupsList()"><option value="ALL">All contests</option></select>
+            </div>
+            <div class="toolbar-group">
+                <span id="save-state-badge" class="badge badge-outline">No saved copy</span>
+                <button class="secondary small" onclick="savePlan()">Save plan</button>
+                <button class="secondary small" onclick="loadPlan()">Load plan</button>
+                <button class="secondary small" onclick="exportPlanCSV()">Export CSV</button>
+            </div>
+            <p id="workspace-status" class="workspace-status" role="status" aria-live="polite">Ready.</p>
+        </div>
+
+        <div class="grid-4" style="margin-bottom: 1.25rem;">
+            <div class="metric-tile">
+                <dt>Cards available</dt>
+                <dd id="metric-total-ev">{{ roster_card_count }}</dd>
+            </div>
+            <div class="metric-tile">
+                <dt>Projected total</dt>
+                <dd id="metric-total-proj">{{ active_plan.total_weekly_projection if active_plan else '0.00' }} pts</dd>
+            </div>
+            <div class="metric-tile">
+                <dt>Lineups</dt>
+                <dd id="metric-lineup-count">{{ active_plan.lineups|length if active_plan else 0 }}</dd>
+            </div>
+            <div class="metric-tile">
+                <dt>Cards assigned</dt>
+                <dd id="metric-assigned">0</dd>
+            </div>
+        </div>
+
+        <div id="entry-mix" class="pill-group" style="margin-bottom: 1.5rem;" aria-label="Entries by contest"></div>
+
+        <div class="workspace-layout">
+            <div class="workspace-lineups" id="lineups-container" aria-label="All lineups">
+                <div id="workspace-empty" class="card" style="text-align: center; padding: 3rem 2rem;">
+                    <p style="font-size: 1.05rem; color: var(--text-secondary);">No lineups yet. Generate lineups above, or add an empty entry after one plan exists.</p>
                 </div>
             </div>
-            <div class="form-actions">
+
+            <aside class="card roster-panel" aria-label="Owned card inventory">
+                <div class="card-header" style="margin-bottom: 0.85rem;">
+                    <div>
+                        <h3 style="margin: 0;">Roster</h3>
+                        <p style="margin: 0.15rem 0 0; font-size: 0.8rem;">Every owned copy, including assigned, excluded and ineligible cards.</p>
+                    </div>
+                    <span id="roster-panel-badge" class="badge badge-success">{{ roster_card_count }} Loaded</span>
+                </div>
+                <div class="roster-filters">
+                    <label for="roster-search">Search player or team</label>
+                    <input id="roster-search" type="text" placeholder="Search player or team" oninput="renderRosterPanel()">
+                    <div class="filter-row">
+                        <div style="flex: 1;">
+                            <label for="roster-pos-filter">Position</label>
+                            <select id="roster-pos-filter" onchange="renderRosterPanel()">
+                                <option value="ALL">All</option>
+                                <option value="QB">QB</option>
+                                <option value="RB">RB</option>
+                                <option value="WR">WR</option>
+                                <option value="TE">TE</option>
+                            </select>
+                        </div>
+                        <div style="flex: 1;">
+                            <label for="roster-avail-filter">Availability</label>
+                            <select id="roster-avail-filter" onchange="renderRosterPanel()">
+                                <option value="ALL">All cards</option>
+                                <option value="AVAILABLE">Available</option>
+                                <option value="ASSIGNED">Assigned</option>
+                                <option value="UNASSIGNED">Unassigned</option>
+                                <option value="EXCLUDED">Excluded</option>
+                                <option value="INELIGIBLE">Ineligible or unmatched</option>
+                                <option value="GAME_LOCKED">Game started</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <p id="roster-panel-count" class="workspace-status" role="status" aria-live="polite"></p>
+                <div class="table-wrap">
+                    <table class="roster-table">
+                        <thead>
+                            <tr>
+                                <th class="sortable" data-col="player" onclick="setRosterSort('player')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();setRosterSort('player');}" tabindex="0" role="button" aria-sort="none">Player <span class="sort-icon">↕</span></th>
+                                <th class="sortable" data-col="pos" onclick="setRosterSort('pos')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();setRosterSort('pos');}" tabindex="0" role="button" aria-sort="none">Pos <span class="sort-icon">↕</span></th>
+                                <th class="sortable numeric" data-col="mult" onclick="setRosterSort('mult')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();setRosterSort('mult');}" tabindex="0" role="button" aria-sort="none">Mult <span class="sort-icon">↕</span></th>
+                                <th class="sortable numeric" data-col="adj_proj" onclick="setRosterSort('adj_proj')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();setRosterSort('adj_proj');}" tabindex="0" role="button" aria-sort="none">Adj proj <span class="sort-icon">↕</span></th>
+                                <th class="sortable numeric" data-col="salary" onclick="setRosterSort('salary')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();setRosterSort('salary');}" tabindex="0" role="button" aria-sort="none">Salary <span class="sort-icon">↕</span></th>
+                                <th class="sortable" data-col="assignment" onclick="setRosterSort('assignment')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();setRosterSort('assignment');}" tabindex="0" role="button" aria-sort="none">Assignment <span class="sort-icon">↕</span></th>
+                                <th class="sortable" data-col="availability" onclick="setRosterSort('availability')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();setRosterSort('availability');}" tabindex="0" role="button" aria-sort="none" title="Availability status">Status <span class="sort-icon">↕</span></th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="roster-tbody"></tbody>
+                    </table>
+                </div>
+            </aside>
+        </div>
+    </div>
+
+    <!-- SECTION: LIVE LINEUP MANAGER & PRE-KICKOFF REALLOCATIONS -->
+    <div id="sec-live" class="hidden">
+        <!-- Live Disclaimer Banner -->
+        <div class="alert info" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem; margin-bottom: 1.25rem;">
+            <div>
+                <strong>In-Week Live Manager:</strong> Started players cannot move. In-progress players accumulate live scores while retaining remaining projection uncertainty. Completed games lock with zero remaining variance.
+                <div style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 0.25rem;">
+                    Scores and status can also be entered directly in the workspace lineup rows. Applying reallocations updates the local planner only. GameBlazers has no automated submission API, so execute moves in the GameBlazers app.
+                </div>
+            </div>
+            <div id="live-timeline-badge" class="badge badge-info" style="font-size: 0.85rem; padding: 0.35rem 0.75rem;">Timeline: Real-time clock</div>
+        </div>
+
+        <details class="advanced-block">
+            <summary>Advanced: demonstration scenarios, payout estimates and coordinated reallocations (outside the normal editing flow)</summary>
+
+        <!-- Demonstration Scenarios & Simulation Controls -->
+        <section class="card" style="margin-bottom: 1.5rem;">
+            <div class="card-header">
                 <div>
-                    <label for="contest">Contest</label>
-                    <select id="contest" name="contest">
-                    {% for name, contest in contests.items() %}
-                        <option value="{{ name }}" {% if name == selected_contest %}selected{% endif %}>{{ name }} — {{ contest.slots|join(' / ') }} ({{ contest.minimum_salary|currency }}–{{ contest.maximum_salary|currency }})</option>
+                    <h3>1. Working Demonstration Scenarios &amp; Timeline Simulation</h3>
+                    <p>Load pre-configured test scenarios or simulate game windows to test kickoff locks and payout opportunities.</p>
+                </div>
+            </div>
+
+            <div style="margin-bottom: 1.25rem;">
+                <label style="font-weight: 600; font-size: 0.82rem; color: var(--text-secondary); display: block; margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.04em;">Load Pre-Configured Test Scenarios</label>
+                <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                    <button class="primary small" onclick="loadLiveScenario('thursday_breakout')">&#9889; Thursday Breakout Demo</button>
+                    <button class="secondary small" onclick="loadLiveScenario('monday_player_choice')">&#127919; Monday Player-Choice (Floor vs Cash)</button>
+                    <button class="secondary small" onclick="loadLiveScenario('monday_first_place')">&#127942; Monday 1st-Place Chase (Boom/Bust)</button>
+                    <button class="secondary small" onclick="loadLiveScenario('inprogress_chain')">&#128260; In-Progress Multi-Swap Chain</button>
+                </div>
+            </div>
+
+            <div style="border-top: 1px solid var(--border); padding-top: 1rem;">
+                <label style="font-weight: 600; font-size: 0.82rem; color: var(--text-secondary); display: block; margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.04em;">Simulate Game Windows (Kickoff Locks)</label>
+                <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center;">
+                    <button class="secondary small" onclick="simulateTimeline('reset')">Reset (Pre-Kickoff)</button>
+                    <button class="secondary small" onclick="simulateTimeline('post_thursday')">Post-Thursday Final</button>
+                    <button class="secondary small" onclick="simulateTimeline('sunday_early_live')">Sunday 1 PM In-Progress</button>
+                    <button class="secondary small" onclick="simulateTimeline('sunday_post_early')">Sunday Post-Early Final</button>
+                    <button class="secondary small" onclick="simulateTimeline('monday_pregame')">Monday Pre-Game</button>
+                    <span id="live-sim-status" style="font-size: 0.82rem; color: var(--text-secondary); margin-left: 0.5rem;"></span>
+                </div>
+            </div>
+        </section>
+
+        <section class="card" style="margin-bottom: 1.5rem;">
+            <h3>NFL dashboard schedule</h3>
+            <p>Fill missing kickoff times for the selected week. Scores and existing times stay unchanged.</p>
+            <form onsubmit="importDashboardSchedule(event)" style="display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: end;">
+                <label>Season <input id="dashboard-season" type="number" min="2000" max="2100" value="2026" required style="width: 7rem;"></label>
+                <label>Week <input id="dashboard-week" type="number" min="1" max="18" value="1" required style="width: 5rem;"></label>
+                <button type="submit" class="secondary small">Import dashboard kickoff times</button>
+            </form>
+            <p id="dashboard-schedule-status" role="status" style="font-size: 0.85rem;">No schedule imported in this server session.</p>
+        </section>
+
+        <!-- Missing Inputs and Model Assumptions Bar -->
+        <div id="live-missing-inputs-card" class="card" style="margin-bottom: 1.5rem; background: var(--surface-muted); border-left: 3px solid var(--warning);">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
+                <div>
+                    <h4 style="margin: 0; font-size: 0.95rem; color: var(--warning);">&#9888; Data Quality &amp; Model Assumptions</h4>
+                    <p style="margin: 0.2rem 0 0; font-size: 0.82rem;" id="live-assumptions-text">
+                        Assumed Historical Bayesian Fitted Means (2024 weeks 8-13 sample), not live dynamic contest cutoffs. Player distributions are modeled approximations.
+                    </p>
+                    <div id="live-missing-detail" style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 0.25rem;"></div>
+                </div>
+                <div>
+                    <input type="file" id="live-scores-file-input" accept=".csv" style="display: none;" onchange="uploadLiveScoresCSV()">
+                    <button class="secondary small" onclick="document.getElementById('live-scores-file-input').click()">Upload Live Scores CSV</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Promising Lineups Dashboard -->
+        <section class="card" style="margin-bottom: 1.5rem;">
+            <div class="card-header">
+                <div>
+                    <h3>2. Promising Lineups &amp; Payout Opportunities</h3>
+                    <p>Lineups ranked by payout leverage and priority for remaining scarce upgrades.</p>
+                </div>
+                <button class="secondary small" onclick="fetchLiveState()">Refresh Live State</button>
+            </div>
+            <div id="promising-lineups-grid" class="grid-2" style="gap: 1rem;">
+                <div style="color: var(--text-secondary); padding: 1rem;">No active lineups loaded. Load a plan or test scenario above.</div>
+            </div>
+        </section>
+
+        <!-- Coordinated Reallocation Action Center -->
+        <section class="card" style="margin-bottom: 1.5rem;">
+            <div class="card-header">
+                <div>
+                    <h3>3. Coordinated Card Reallocations</h3>
+                    <p>Mathematically reassigns remaining eligible cards across occupied lineups to maximize total weekly payout, respecting kickoff locks and card ownership.</p>
+                </div>
+                <button class="primary" onclick="recommendCoordinatedSwaps()">&#9889; Calculate Reallocations</button>
+            </div>
+
+            <!-- Reallocation Result Panel -->
+            <div id="reallocation-results" class="hidden">
+                <div class="grid-4" style="margin-bottom: 1.25rem;">
+                    <div class="metric-tile">
+                        <dt>Portfolio Payout Before</dt>
+                        <dd id="realloc-payout-before">$0.00</dd>
+                    </div>
+                    <div class="metric-tile">
+                        <dt>Portfolio Payout After</dt>
+                        <dd id="realloc-payout-after" style="color: var(--accent);">$0.00</dd>
+                    </div>
+                    <div class="metric-tile">
+                        <dt>Expected Payout Gain</dt>
+                        <dd id="realloc-payout-delta" style="color: var(--accent);">+$0.00</dd>
+                    </div>
+                    <div class="metric-tile">
+                        <dt>Optimality Status</dt>
+                        <dd id="realloc-optimality-status" style="font-size: 0.95rem; font-weight: 600; line-height: 1.3; margin-top: 0.2rem;">Proven Optimal</dd>
+                    </div>
+                </div>
+
+                <h4 style="margin-bottom: 0.75rem;">Recommended Swaps</h4>
+                <div class="table-wrap" style="margin-bottom: 1.25rem;">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Lineup</th>
+                                <th>Slot</th>
+                                <th>Current Card</th>
+                                <th></th>
+                                <th>Recommended Card</th>
+                                <th class="numeric">Salary Delta</th>
+                                <th class="numeric">Score Delta</th>
+                                <th class="numeric">Payout Delta</th>
+                                <th>Optimization Rationale</th>
+                            </tr>
+                        </thead>
+                        <tbody id="realloc-swaps-tbody"></tbody>
+                    </table>
+                </div>
+
+                <div style="background: var(--surface-muted); border: 1px solid var(--border); border-radius: 8px; padding: 1.25rem; margin-bottom: 1.25rem;">
+                    <h4 style="margin-top: 0; margin-bottom: 0.5rem;">Step-by-Step Action Checklist (For GameBlazers App)</h4>
+                    <ol id="realloc-steps-list" style="margin: 0; padding-left: 1.25rem; font-size: 0.88rem; color: var(--text);"></ol>
+                </div>
+
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+                    <div style="font-size: 0.82rem; color: var(--text-secondary); max-width: 600px;">
+                        Applying reallocations updates the local planner state so you can track progress and export your revised lineups.
+                    </div>
+                    <button class="primary" style="font-size: 0.95rem; padding: 0.6rem 1.4rem;" onclick="applyCoordinatedReallocations()">Apply All Reallocations (Local Planner)</button>
+                </div>
+            </div>
+            <div id="reallocation-empty" style="color: var(--text-secondary); padding: 1rem; text-align: center;">
+                Click "Calculate Reallocations" to solve the optimal distribution of remaining cards across your entered lineups.
+            </div>
+        </section>
+        </details>
+
+        <!-- Player Live State Inspector & Score Editor Table -->
+        <section class="card">
+            <div class="card-header">
+                <div>
+                    <h3>Player status and score overrides</h3>
+                    <p>Routine score and status edits belong in the workspace, where each lineup row shows them. This table is the full-roster view. Raw points are shown before the card multiplier.</p>
+                </div>
+            </div>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Player</th>
+                            <th>Pos</th>
+                            <th>Team</th>
+                            <th>Kickoff</th>
+                            <th>Game Status</th>
+                            <th class="numeric">Actual / Live Pts</th>
+                            <th class="numeric">Rem. Proj</th>
+                            <th>Outcome Profile</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="live-players-tbody"></tbody>
+                </table>
+            </div>
+        </section>
+    </div>
+
+    <!-- SECTION 3: ROSTER & PROJECTIONS DATA HUB -->
+    <div id="sec-data" class="hidden">
+        <div class="grid-2">
+            <!-- Roster Ingestion -->
+            <section class="card">
+                <div class="card-header">
+                    <div>
+                        <h3>Owned Card Inventory</h3>
+                        <p>Tracked as distinct physical copies from your GameBlazers account.</p>
+                    </div>
+                    <span id="roster-source-badge" class="badge badge-success">{{ roster_card_count }} Loaded</span>
+                </div>
+
+                <label class="upload-dropzone" style="display: block; margin-bottom: 1.25rem;">
+                    <input type="file" id="roster-upload-input" accept=".csv" style="display: none;" onchange="uploadRosterCSV(event)">
+                    <div style="font-size: 1.05rem; font-weight: 600; color: var(--text); margin-bottom: 0.35rem;">
+                        Upload GameBlazers Roster CSV
+                    </div>
+                    <p style="font-size: 0.82rem; margin: 0;">Click to browse your downloaded GameBlazers card export</p>
+                </label>
+
+                <div style="background: var(--surface-muted); padding: 1rem; border-radius: 8px; font-size: 0.88rem; margin-bottom: 1rem;">
+                    <span style="font-weight: 500;">Salaries from your roster export</span>
+                    <p style="font-size: 0.8rem; margin: 0.5rem 0 0;">The exported Salary already includes the card multiplier. Projections supply raw points, which we multiply once.</p>
+                </div>
+
+                <button class="secondary small" onclick="focusRosterPanel()">Open inventory panel</button>
+            </section>
+
+            <!-- Weekly Projections -->
+            <section class="card">
+                <div class="card-header">
+                    <div>
+                        <h3>Weekly Projections Feed</h3>
+                        <p>Pre-seeded via Daily Fantasy Fuel with automated injury exclusions.</p>
+                    </div>
+                    <span class="badge badge-success">Auto-Seeded</span>
+                </div>
+
+                <div style="margin-bottom: 1.25rem;">
+                    <label for="slate-select">Active Slate</label>
+                    <div style="display: flex; gap: 0.5rem;">
+                        <select id="slate-select"></select>
+                        <button id="refresh-dff-btn" class="secondary" onclick="refreshDFF()">Refresh</button>
+                    </div>
+                </div>
+
+                <div id="dff-status-box" style="background: var(--surface-muted); padding: 0.85rem; border-radius: 8px; font-size: 0.85rem; margin-bottom: 1rem;">
+                    {% if snapshot %}
+                    <div><strong>Slate:</strong> {{ snapshot.slate_id }} ({{ snapshot.slate_info.slate_type if snapshot.slate_info else 'NFL' }})</div>
+                    <div><strong>Players:</strong> {{ snapshot.offensive_player_count }} offensive | {{ snapshot.dst_excluded_count }} DST excluded | {{ snapshot.positive_projection_count }} projected</div>
+                    <div style="color: var(--text-secondary); font-size: 0.78rem; margin-top: 0.25rem;">Source: {{ snapshot.source }} | Updated: {{ snapshot.fetched_at[:19] }} UTC</div>
+                    {% else %}
+                    <div>No projections snapshot loaded yet.</div>
+                    {% endif %}
+                </div>
+
+                <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                    <button class="secondary small" onclick="checkUpdates()">Check Slate Updates</button>
+                    <button class="secondary small" onclick="openOverridesModal()">Manage Overrides</button>
+                    <label class="button secondary small" style="cursor: pointer; margin: 0;">
+                        Custom Projections CSV
+                        <input type="file" id="csv-fallback-input" accept=".csv" style="display: none;" onchange="uploadProjectionsCSV(event)">
+                    </label>
+                </div>
+                <div id="update-check-msg" style="margin-top: 0.6rem; font-size: 0.82rem; color: var(--text-secondary);"></div>
+            </section>
+        </div>
+    </div>
+
+    <!-- SECTION 4: SINGLE LINEUP OPTIMIZER (Retained for validation tests) -->
+    <div id="sec-optimizer" class="hidden">
+        {% if errors %}
+        <section class="alert" role="alert" aria-label="Input errors">
+            <ul style="margin: 0; padding-left: 1.25rem;">
+            {% for error in errors %}<li>{{ error }}</li>{% endfor %}
+            </ul>
+        </section>
+        {% endif %}
+
+        <section class="card" aria-labelledby="upload-heading">
+            <div class="card-header">
+                <h2 id="upload-heading">Single Lineup Optimizer</h2>
+                <span class="badge badge-outline">Classic Solver</span>
+            </div>
+            <p>Upload a roster CSV and projection CSV to solve a single contest lineup.</p>
+            <form action="{{ url_for('optimize') }}" method="post" enctype="multipart/form-data">
+                <div class="grid-2" style="margin: 1rem 0;">
+                    <div>
+                        <label for="roster_file">GameBlazers roster CSV</label>
+                        <input id="roster_file" name="roster_file" type="file" accept=".csv,text/csv" required>
+                    </div>
+                    <div>
+                        <label for="projection_file">Raw weekly projections CSV</label>
+                        <input id="projection_file" name="projection_file" type="file" accept=".csv,text/csv" required>
+                    </div>
+                </div>
+                <div style="display: flex; align-items: end; gap: 1rem; margin-top: 1rem;">
+                    <div>
+                        <label for="contest">Contest</label>
+                        <select id="contest" name="contest">
+                        {% for name, contest in contests.items() %}
+                            <option value="{{ name }}" {% if name == selected_contest %}selected{% endif %}>{{ name }} — {{ contest.slots|join(' / ') }} ({{ contest.minimum_salary|currency }}–{{ contest.maximum_salary|currency }})</option>
+                        {% endfor %}
+                        </select>
+                    </div>
+                    <button type="submit">Optimize Lineup</button>
+                </div>
+            </form>
+        </section>
+
+        {% if result %}
+        <section class="card" aria-labelledby="result-heading">
+            {% if result.feasible %}
+            <div class="alert success" role="status">
+                <h2 id="result-heading">Complete optimal lineup</h2>
+                <p>{{ result.contest }} returned all {{ result.slots|length }} required slots. No partial lineup is shown.</p>
+            </div>
+            <div class="grid-3" style="margin: 1rem 0;">
+                <div class="metric-tile"><dt>Contest</dt><dd>{{ result.contest }}</dd></div>
+                <div class="metric-tile"><dt>Total adjusted projection</dt><dd>{{ result.total_adjusted_projection|decimal }}</dd></div>
+                <div class="metric-tile"><dt>Total salary</dt><dd>{{ result.total_salary|currency }}</dd></div>
+                <div class="metric-tile"><dt>Contest minimum salary</dt><dd>{{ result.minimum_salary|currency }}</dd></div>
+                <div class="metric-tile"><dt>Contest maximum salary</dt><dd>{{ result.maximum_salary|currency }}</dd></div>
+                <div class="metric-tile"><dt>Remaining salary</dt><dd>{{ result.remaining_salary|currency }}</dd></div>
+            </div>
+            <div class="table-wrap">
+                <table>
+                    <caption style="text-align: left; color: var(--text-secondary); margin-bottom: .4rem;">Optimized {{ result.contest }} lineup</caption>
+                    <thead><tr><th>Slot</th><th>Player</th><th>Position</th><th>Team</th><th class="numeric">Multiplier</th><th class="numeric">Salary</th><th class="numeric">Raw projection</th><th class="numeric">Adjusted projection</th></tr></thead>
+                    <tbody>
+                    {% for row in result.lineup %}
+                        <tr data-slot="{{ row.slot }}">
+                            <td>{{ row.slot }}</td><td>{{ row.player_name }}</td><td>{{ row.position }}</td><td>{{ row.team }}</td>
+                            <td class="numeric">{{ row.multiplier|multiplier }}</td><td class="numeric">{{ row.salary|currency }}</td>
+                            <td class="numeric">{{ row.raw_projection|decimal }}</td><td class="numeric">{{ row.adjusted_projection|decimal }}</td>
+                        </tr>
                     {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="alert" role="alert">
+                <h2 id="result-heading">Input could not be optimized</h2>
+                <p>{{ infeasible_messages.get(result.infeasible_reason, 'No complete lineup satisfies the contest rules.') }}</p>
+                <p style="font-size: .85rem;">Technical reason: {{ result.infeasible_reason }}</p>
+            </div>
+            {% endif %}
+
+            <h3>Processing summary</h3>
+            <div class="grid-4" style="margin: .75rem 0;">
+                <div class="metric-tile"><dt>Roster rows read</dt><dd>{{ result.roster_rows_read }}</dd></div>
+                <div class="metric-tile"><dt>Projection rows read</dt><dd>{{ result.projection_rows_read }}</dd></div>
+                <div class="metric-tile"><dt>Matched cards</dt><dd>{{ result.matched_cards }}</dd></div>
+                <div class="metric-tile"><dt>Eligible cards</dt><dd>{{ result.eligible_cards }}</dd></div>
+            </div>
+
+            {% if diagnostic_counts %}
+            <div style="margin-top: 1rem;">
+                <h3>Exclusions and diagnostics</h3>
+                <ul>
+                {% for diagnostic in diagnostic_counts %}<li>{{ diagnostic.label }}: {{ diagnostic.count }}</li>{% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+
+            {% if diagnostic_details %}
+            <details style="margin-top: .75rem;">
+                <summary style="cursor: pointer; color: var(--accent); font-weight: 600;">Details</summary>
+                <ul>
+                {% for diagnostic in diagnostic_details %}
+                    <li>{% if diagnostic.player_name %}<strong>{{ diagnostic.player_name }}</strong> — {% endif %}{{ diagnostic.reason|replace('_', ' ') }}{% if diagnostic.source_row %}, source row {{ diagnostic.source_row }}{% endif %}{% if diagnostic.detail %}: {{ diagnostic.detail }}{% endif %}</li>
+                {% endfor %}
+                </ul>
+            </details>
+            {% endif %}
+        </section>
+        {% endif %}
+    </div>
+
+    <!-- MODAL 1: CONTEST RULES & HISTORICAL BENCHMARKS -->
+    <div id="rules-modal" class="modal-overlay">
+        <div class="modal" style="width: min(100%, 960px);">
+            <div class="modal-header">
+                <h3 style="margin: 0;">Contest Rules &amp; Master Specifications</h3>
+                <button class="secondary small" onclick="closeModal('rules-modal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p>Lineups maximize projected points within these rules. Each card copy can be used once across your entries.</p>
+                <div class="table-wrap"><table><thead><tr><th>Contest</th><th>Salary</th><th>Entries</th><th>Positions</th><th>Collection</th></tr></thead><tbody>
+                {% for name, cfg in planner_contests.items() if cfg.enabled and cfg.eligible and name != 'Wildfire' %}
+                <tr><td>{{ name }}</td><td>${{ '{:,}'.format(cfg.minimum_salary) }} to ${{ '{:,}'.format(cfg.maximum_salary) }}</td><td>{{ cfg.default_entry_limit }}</td><td>{{ cfg.slots|join(', ') }}</td><td>{% for group, bounds in cfg.collection_requirements.items() %}{{ group }} {{ bounds[0] }} to {{ bounds[1] }} {% else %}Core{% endfor %}</td></tr>
+                {% endfor %}
+                </tbody></table></div>
+                <p>About 3 points per $1,000 of salary is your rough scoring reference. Projections can be lower. It does not exclude players or lineups.</p>
+                <p>Primetime Pyro uses the designated Week 1 primetime games. Payouts do not affect generation.</p>
+            </div>
+            <div class="modal-footer">
+                <button class="secondary small" onclick="closeModal('rules-modal')">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 2: CARD SWAP MODAL -->
+    <div id="swap-modal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="swap-modal-title">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 id="swap-modal-title" style="margin: 0;">Swap Player</h3>
+                <button class="secondary small" onclick="closeModal('swap-modal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p id="swap-feedback" role="status" aria-live="polite"></p><label for="swap-search">Find a replacement</label>
+                <input type="text" id="swap-search" placeholder="Search eligible owned cards..." oninput="filterSwapCandidates()" style="margin-bottom: 0.75rem;">
+                <div class="table-wrap" style="max-height: 360px;">
+                    <table>
+                        <thead><tr><th>Player</th><th>Pos</th><th>Team</th><th class="numeric">Salary</th><th class="numeric">Projection</th><th class="numeric">Change</th><th class="numeric">Salary left</th><th>Action</th></tr></thead>
+                        <tbody id="swap-candidates-tbody"></tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="secondary small" onclick="closeModal('swap-modal')">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 3: PROJECTION OVERRIDES MODAL -->
+    <div id="overrides-modal" class="modal-overlay">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 style="margin: 0;">Player Projection Overrides</h3>
+                <button class="secondary small" onclick="closeModal('overrides-modal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p style="font-size: 0.85rem;">Overrides are preserved when refreshing DFF projections. Setting an override updates all cards of that athlete.</p>
+                <div style="display: flex; gap: 0.5rem; margin-bottom: 0.75rem;">
+                    <input type="text" id="override-player-input" placeholder="Athlete key (e.g. joshallen)" style="flex: 2;">
+                    <input type="number" step="0.1" id="override-val-input" placeholder="Proj pts" style="flex: 1;">
+                    <button class="small" onclick="saveOverride()">Set</button>
+                </div>
+                <div class="table-wrap" style="max-height: 300px;">
+                    <table>
+                        <thead><tr><th>Athlete</th><th>Custom Projection</th><th>Action</th></tr></thead>
+                        <tbody id="overrides-tbody"></tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="secondary small" onclick="closeModal('overrides-modal')">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 4: PROBABILISTIC DATA REQUIREMENTS MODAL -->
+    <div id="requirements-modal" class="modal-overlay">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 style="margin: 0;">Probabilistic Ranking Requirements</h3>
+                <button class="secondary small" onclick="closeModal('requirements-modal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p style="font-size: 0.88rem;">The planner operates in <strong>Provisional Historical Threshold Mode</strong> using fitted Bayesian cutoffs from late 2024. For full calibrated Expected Value calculations, the following live data assets are required:</p>
+                <div id="requirements-list"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="secondary small" onclick="closeModal('requirements-modal')">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 5: MOVE / EXCHANGE DESTINATION PICKER -->
+    <div id="move-modal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="move-modal-title">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 id="move-modal-title" style="margin: 0;">Move or exchange a card</h3>
+                <button class="secondary small" onclick="closeModal('move-modal')" aria-label="Close move dialog">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p id="move-feedback" role="status" aria-live="polite"></p>
+                <label for="move-search">Filter destinations</label>
+                <input type="text" id="move-search" placeholder="Contest, player or slot" oninput="renderMoveDestinations()" style="margin-bottom: 0.75rem;">
+                <div id="move-destination-list" class="destination-list"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="secondary small" onclick="closeModal('move-modal')">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 6: LIVE PLAYER STATE / SCORE OVERRIDE MODAL -->
+    <div id="live-player-modal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="live-modal-player-name">
+        <div class="modal" style="width: min(100%, 560px);">
+            <div class="modal-header">
+                <h3 id="live-modal-player-name" style="margin: 0;">Edit Live Player State</h3>
+                <button class="secondary small" onclick="closeModal('live-player-modal')" aria-label="Close score dialog">&times;</button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="live-modal-athlete-key">
+                <p id="live-modal-readout" class="score-readout"></p>
+                <p id="live-modal-error" class="workspace-status" data-tone="error" role="alert"></p>
+                <div style="margin-bottom: 1rem;">
+                    <label for="live-modal-status" style="font-weight: 500; font-size: 0.85rem; display: block; margin-bottom: 0.35rem;">Game status</label>
+                    <select id="live-modal-status" style="width: 100%;" onchange="onScoreStatusChange()">
+                        <option value="UPCOMING">Upcoming (still editable)</option>
+                        <option value="IN_PROGRESS">In progress (locked; enter live and remaining)</option>
+                        <option value="FINAL">Final (locked; remaining becomes zero)</option>
                     </select>
                 </div>
-                <button type="submit">Optimize Lineup</button>
+                <div class="grid-2" style="margin-bottom: 1rem;">
+                    <div>
+                        <label for="live-modal-points" style="font-weight: 500; font-size: 0.85rem; display: block; margin-bottom: 0.35rem;">Actual raw points (before multiplier)</label>
+                        <input type="number" step="0.1" id="live-modal-points" style="width: 100%;" placeholder="Leave blank to keep unchanged">
+                    </div>
+                    <div>
+                        <label for="live-modal-rem-proj" style="font-weight: 500; font-size: 0.85rem; display: block; margin-bottom: 0.35rem;">Remaining raw estimate</label>
+                        <input type="number" step="0.1" id="live-modal-rem-proj" style="width: 100%;" placeholder="Leave blank for unknown">
+                    </div>
+                </div>
+                <div style="margin-bottom: 1rem;">
+                    <label for="live-modal-kickoff" style="font-weight: 500; font-size: 0.85rem; display: block; margin-bottom: 0.35rem;">Kickoff timestamp (ISO 8601)</label>
+                    <input type="text" id="live-modal-kickoff" style="width: 100%;" placeholder="2026-09-13T13:00:00-04:00">
+                </div>
+                <div style="margin-bottom: 1rem;">
+                    <label for="live-modal-profile" style="font-weight: 500; font-size: 0.85rem; display: block; margin-bottom: 0.35rem;">Outcome profile</label>
+                    <select id="live-modal-profile" style="width: 100%;">
+                        <option value="standard">Standard normal distribution</option>
+                        <option value="reliable">Reliable / high floor</option>
+                        <option value="volatile">Volatile / boom-or-bust</option>
+                    </select>
+                </div>
             </div>
-        </form>
-    </section>
-
-    {% if result %}
-    <section class="card" aria-labelledby="result-heading">
-        {% if result.feasible %}
-        <div class="notice success" role="status">
-            <h2 id="result-heading">Complete optimal lineup</h2>
-            <p>{{ result.contest }} returned all {{ result.slots|length }} required slots. No partial lineup is shown.</p>
+            <div class="modal-footer">
+                <button class="secondary small" onclick="closeModal('live-player-modal')">Cancel</button>
+                <button class="primary small" onclick="saveLivePlayerState()">Save Updates</button>
+            </div>
         </div>
-        <dl class="summary-grid">
-            <div class="metric"><dt>Contest</dt><dd>{{ result.contest }}</dd></div>
-            <div class="metric"><dt>Total adjusted projection</dt><dd>{{ result.total_adjusted_projection|decimal }}</dd></div>
-            <div class="metric"><dt>Total salary</dt><dd>{{ result.total_salary|currency }}</dd></div>
-            <div class="metric"><dt>Contest minimum salary</dt><dd>{{ result.minimum_salary|currency }}</dd></div>
-            <div class="metric"><dt>Contest maximum salary</dt><dd>{{ result.maximum_salary|currency }}</dd></div>
-            <div class="metric"><dt>Remaining salary</dt><dd>{{ result.remaining_salary|currency }}</dd></div>
-        </dl>
-        <div class="table-wrap">
-            <table>
-                <caption class="technical">Optimized {{ result.contest }} lineup</caption>
-                <thead><tr><th>Slot</th><th>Player</th><th>Position</th><th>Team</th><th class="numeric">Multiplier</th><th class="numeric">Salary</th><th class="numeric">Raw projection</th><th class="numeric">Adjusted projection</th></tr></thead>
-                <tbody>
-                {% for row in result.lineup %}
-                    <tr data-slot="{{ row.slot }}">
-                        <td>{{ row.slot }}</td><td>{{ row.player_name }}</td><td>{{ row.position }}</td><td>{{ row.team }}</td>
-                        <td class="numeric">{{ row.multiplier|multiplier }}</td><td class="numeric">{{ row.salary|currency }}</td>
-                        <td class="numeric">{{ row.raw_projection|decimal }}</td><td class="numeric">{{ row.adjusted_projection|decimal }}</td>
-                    </tr>
-                {% endfor %}
-                </tbody>
-            </table>
-        </div>
-        {% else %}
-        <div class="notice" role="alert">
-            <h2 id="result-heading">Input could not be optimized</h2>
-            <p>{{ infeasible_messages.get(result.infeasible_reason, 'No complete lineup satisfies the contest rules.') }}</p>
-            <p class="technical">Technical reason: {{ result.infeasible_reason }}</p>
-        </div>
-        {% endif %}
-
-        <h3>Processing summary</h3>
-        <dl class="processing-summary">
-            <div><dt>Roster rows read</dt><dd>{{ result.roster_rows_read }}</dd></div>
-            <div><dt>Projection rows read</dt><dd>{{ result.projection_rows_read }}</dd></div>
-            <div><dt>Matched cards</dt><dd>{{ result.matched_cards }}</dd></div>
-            <div><dt>Eligible cards</dt><dd>{{ result.eligible_cards }}</dd></div>
-        </dl>
-
-        {% if diagnostic_counts %}
-        <div class="diagnostics">
-            <h3>Exclusions and diagnostics</h3>
-            <ul>
-            {% for diagnostic in diagnostic_counts %}<li>{{ diagnostic.label }}: {{ diagnostic.count }}</li>{% endfor %}
-            </ul>
-        </div>
-        {% endif %}
-        {% if diagnostic_details %}
-        <details>
-            <summary>Details</summary>
-            <ul>
-            {% for diagnostic in diagnostic_details %}
-                <li>{% if diagnostic.player_name %}<strong>{{ diagnostic.player_name }}</strong> — {% endif %}{{ diagnostic.reason|replace('_', ' ') }}{% if diagnostic.source_row %}, source row {{ diagnostic.source_row }}{% endif %}{% if diagnostic.detail %}: {{ diagnostic.detail }}{% endif %}</li>
-            {% endfor %}
-            </ul>
-        </details>
-        {% endif %}
-    </section>
-    {% endif %}
+    </div>
 </main>
+
+<script>
+    let appState = {
+        activeSection: 'overview',
+        activePlan: null,
+        cards: [],
+        overrides: {},
+        slates: [],
+        excludedPlayers: [],
+        livePlayers: {},
+        liveSyncAt: null,
+        swapContext: { lineupId: null, slotName: null, slotKind: null },
+        moveContext: { lineupId: null, slotName: null },
+        scoreContext: { athleteKey: null, cardId: null, lineupId: null, slotName: null },
+        contestsInitialized: false,
+        busy: false,
+        pendingLabel: '',
+        unsaved: false,
+        savedAt: null,
+        rosterSort: { key: null, dir: 'asc' }
+    };
+
+    function setStatus(message, tone) {
+        const el = document.getElementById('workspace-status');
+        if (!el) return;
+        el.textContent = message;
+        el.dataset.tone = tone || '';
+    }
+
+    function notify(message, tone) {
+        setStatus(message, tone);
+        const el = document.getElementById('workspace-feedback');
+        if (el) el.textContent = message;
+    }
+
+    function isBusy() {
+        if (!appState.busy) return false;
+        setStatus(`${appState.pendingLabel || 'A request'} is still running. Wait for it to finish.`, 'pending');
+        return true;
+    }
+
+    function beginRequest(label) {
+        appState.busy = true;
+        appState.pendingLabel = label;
+        setStatus(`${label}...`, 'pending');
+    }
+
+    function endRequest() {
+        appState.busy = false;
+        appState.pendingLabel = '';
+    }
+
+    function markUnsaved() {
+        appState.unsaved = true;
+        renderSaveState();
+    }
+
+    function renderSaveState() {
+        const badge = document.getElementById('save-state-badge');
+        if (!badge) return;
+        if (appState.unsaved) {
+            badge.className = 'badge badge-warning';
+            badge.textContent = 'Unsaved changes';
+        } else if (appState.savedAt) {
+            badge.className = 'badge badge-success';
+            badge.textContent = `Saved ${appState.savedAt}`;
+        } else {
+            badge.className = 'badge badge-outline';
+            badge.textContent = 'No saved copy';
+        }
+    }
+
+    async function postJson(url, body) {
+        const res = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: body === undefined ? undefined : JSON.stringify(body)
+        });
+        let data = {};
+        try { data = await res.json(); } catch (e) { data = {}; }
+        return { ok: res.ok && data.status === 'success', data, res };
+    }
+
+    function preserveView(render) {
+        const wrap = document.querySelector('.roster-panel .table-wrap');
+        const rosterScroll = wrap ? wrap.scrollTop : 0;
+        const windowY = window.scrollY;
+        const active = document.activeElement;
+        const activeId = active && active.id ? active.id : null;
+        render();
+        if (wrap) wrap.scrollTop = rosterScroll;
+        if (windowY) window.scrollTo(0, windowY);
+        if (activeId) {
+            const el = document.getElementById(activeId);
+            if (el && typeof el.focus === 'function') el.focus({ preventScroll: true });
+        }
+    }
+
+    function switchSection(section) {
+        appState.activeSection = section;
+        ['overview', 'live', 'data', 'optimizer'].forEach(s => {
+            const secEl = document.getElementById(`sec-${s}`);
+            const navEl = document.getElementById(`nav-${s}`);
+            if (secEl) secEl.classList.toggle('hidden', s !== section);
+            if (navEl) navEl.classList.toggle('active', s === section);
+        });
+        if (section === 'live') fetchLiveState();
+        if (section === 'overview') renderWorkspace();
+    }
+
+    async function loadSlates() {
+        try {
+            const res = await fetch('/api/dff/slates');
+            const data = await res.json();
+            if (data.status === 'success') {
+                appState.slates = data.slates;
+                const select = document.getElementById('slate-select');
+                select.innerHTML = '';
+                data.slates.forEach(s => {
+                    const opt = document.createElement('option');
+                    opt.value = s.slate_id;
+                    opt.textContent = `${s.slate_type || 'Main'} (${s.game_count} games) — ${s.start_string} [${s.slate_id}]`;
+                    select.appendChild(opt);
+                });
+            }
+        } catch (e) {
+            console.error('Failed to load slates', e);
+        }
+    }
+
+    async function refreshDFF() {
+        const slateId = document.getElementById('slate-select').value;
+        const btn = document.getElementById('refresh-dff-btn');
+        btn.disabled = true;
+        btn.textContent = 'Refreshing...';
+        try {
+            const res = await fetch('/api/dff/refresh', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ slate_id: slateId })
+            });
+            const data = await res.json();
+            if (data.status === 'success') {
+                document.getElementById('dff-status-box').innerHTML = `
+                    <div><strong>Slate:</strong> ${data.snapshot.slate_id}</div>
+                    <div><strong>Players:</strong> ${data.snapshot.offensive_player_count} offensive | ${data.snapshot.dst_excluded_count} DST excluded | ${data.snapshot.positive_projection_count} projected</div>
+                    <div style="color: var(--text-secondary); font-size: 0.78rem;">Updated: ${data.snapshot.fetched_at.slice(0, 19)} UTC</div>
+                `;
+                document.getElementById('update-check-msg').textContent = data.message;
+                fetchAppState();
+            } else {
+                notify(`DFF refresh failed: ${data.message}`, 'error');
+            }
+        } catch (e) {
+            notify(`Network error refreshing DFF: ${e}`, 'error');
+        } finally {
+            btn.disabled = false;
+            btn.textContent = 'Refresh';
+        }
+    }
+
+    async function checkUpdates() {
+        const msgDiv = document.getElementById('update-check-msg');
+        msgDiv.textContent = 'Checking DFF slates...';
+        try {
+            const res = await fetch('/api/check_update');
+            const data = await res.json();
+            msgDiv.textContent = `Update check: [${data.status}] ${data.message}`;
+            if (data.status === 'PROJECTIONS_CHANGED' || data.status === 'NEW_SLATE') {
+                fetchAppState();
+            }
+        } catch (e) {
+            msgDiv.textContent = 'Update check error: ' + e;
+        }
+    }
+
+    async function uploadProjectionsCSV(evt) {
+        const file = evt.target.files[0];
+        if (!file) return;
+        const formData = new FormData();
+        formData.append('projection_file', file);
+        try {
+            const res = await fetch('/api/projections/upload', { method: 'POST', body: formData });
+            const data = await res.json();
+            if (data.status === 'success') {
+                notify(data.message, 'success');
+                fetchAppState();
+            } else {
+                notify(`Projections upload error: ${data.message}`, 'error');
+            }
+        } catch (e) {
+            notify(`Projections upload error: ${e}`, 'error');
+        }
+    }
+
+    async function uploadRosterCSV(evt) {
+        const file = evt.target.files[0];
+        if (!file) return;
+        const formData = new FormData();
+        formData.append('roster_file', file);
+        try {
+            const res = await fetch('/api/roster/upload', { method: 'POST', body: formData });
+            const data = await res.json();
+            if (!res.ok || data.status !== 'success') throw new Error(data.message || 'Roster upload failed.');
+            notify(data.message, 'success');
+            await fetchAppState();
+            switchSection('overview');
+        } catch (e) {
+            notify(`Roster upload error: ${e.message}`, 'error');
+        }
+    }
+
+    function getContestBadgeClass(contestName) {
+        switch (contestName) {
+            case 'Inferno': return 'badge-inferno';
+            case 'Volcano': return 'badge-volcano';
+            case 'Flamethrower': return 'badge-flamethrower';
+            case 'Scorcher': return 'badge-scorcher';
+            case 'Primetime Pyro': return 'badge-pyro';
+            case 'Flex Appeal': return 'badge-flex';
+            case 'Wildfire': return 'badge-volcano';
+            default: return 'badge-outline';
+        }
+    }
+
+    function getContestCap(contestName) {
+        switch (contestName) {
+            case 'Inferno': return 70000;
+            case 'Volcano': return 52000;
+            case 'Flamethrower': return 62000;
+            case 'Scorcher': return 40000;
+            case 'Primetime Pyro': return 48000;
+            case 'Flex Appeal': return 52000;
+            case 'Wildfire': return 48000;
+            default: return 50000;
+        }
+    }
+
+    async function generateWeeklyPlan() {
+        if (isBusy()) return;
+        const btn = document.getElementById('generate-plan-btn');
+        const contestDistribution = {};
+        for (const checkbox of document.querySelectorAll('.contest-selected')) {
+            const name = checkbox.dataset.contest;
+            const input = [...document.querySelectorAll('.contest-limit')].find(el => el.dataset.contest === name);
+            if (!input.reportValidity()) return;
+            contestDistribution[name] = checkbox.checked ? Number(input.value) : 0;
+        }
+        const payload = {
+            salary_source: 'roster',
+            contest_distribution: contestDistribution,
+            quality_threshold: 0
+        };
+        appState.contestsInitialized = true;
+        btn.disabled = true;
+        btn.textContent = 'Building lineups...';
+        beginRequest('Generating lineups');
+        const feedback = document.getElementById('generation-feedback');
+        feedback.textContent = 'Building complete lineups, then improving projected scores. This can take about a minute.';
+        try {
+            const res = await fetch('/api/planner/generate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const data = await res.json();
+            if (!res.ok || data.status !== 'success') throw new Error(data.message || 'Generation failed.');
+            renderPlan(data.plan);
+            feedback.textContent = data.message;
+            markUnsaved();
+            notify(data.message, 'success');
+        } catch (e) {
+            feedback.textContent = `${e.message} Your existing plan is unchanged.`;
+            notify(`${e.message} Your existing plan is unchanged.`, 'error');
+        } finally {
+            endRequest();
+            btn.disabled = false;
+            btn.textContent = 'Generate all lineups';
+        }
+    }
+
+    function renderPlan(plan) {
+        appState.activePlan = plan;
+        if (!appState.contestsInitialized) {
+            const distribution = plan.inventory_summary?.contest_distribution;
+            if (distribution) {
+                document.querySelectorAll('.contest-selected').forEach(el => { el.checked = (distribution[el.dataset.contest] || 0) > 0; });
+                document.querySelectorAll('.contest-limit').forEach(el => { if (distribution[el.dataset.contest]) el.value = distribution[el.dataset.contest]; });
+            }
+            appState.contestsInitialized = true;
+        }
+        renderWorkspace();
+    }
+
+    function renderWorkspace() {
+        if (appState.activeSection !== 'overview') return;
+        preserveView(() => {
+            renderWorkspaceSummary();
+            renderLineupsList();
+            renderRosterPanel();
+            renderSaveState();
+        });
+    }
+
+    function renderWorkspaceSummary() {
+        const plan = appState.activePlan;
+        const lineups = plan ? plan.lineups : [];
+        const setEl = (id, txt) => { const el = document.getElementById(id); if (el) el.textContent = txt; };
+        const assigned = new Set(lineups.flatMap(l => l.slots.filter(s => s.card).map(s => s.card.card_id)));
+        let totalProjected = 0;
+        let allComplete = true;
+        lineups.forEach(l => {
+            const t = lineupTotals(l);
+            totalProjected += (t.actual + t.remaining);
+            if (!t.remainingComplete) allComplete = false;
+        });
+        const totalProjText = allComplete ? `${totalProjected.toFixed(2)} pts` : `${totalProjected.toFixed(2)} pts + unknown`;
+        setEl('metric-total-proj', totalProjText);
+        setEl('metric-lineup-count', String(lineups.length));
+        setEl('metric-assigned', String(assigned.size));
+        setEl('metric-total-ev', String(appState.cards.filter(c => c.is_eligible && !assigned.has(c.card_id)).length));
+        ['roster-panel-badge', 'roster-source-badge'].forEach(id => setEl(id, `${appState.cards.length} Loaded`));
+        renderEntryMix(lineups);
+    }
+
+    function renderEntryMix(lineups) {
+        const mixEl = document.getElementById('entry-mix');
+        const select = document.getElementById('add-entry-contest');
+        if (!mixEl) return;
+        const limits = {};
+        document.querySelectorAll('.contest-selected').forEach(el => { limits[el.dataset.contest] = el.checked; });
+        document.querySelectorAll('.contest-limit').forEach(el => {
+            if (limits[el.dataset.contest] === false) return;
+            limits[el.dataset.contest] = Number(el.value);
+        });
+        const counts = {};
+        lineups.forEach(l => { counts[l.contest_name] = (counts[l.contest_name] || 0) + 1; });
+        // Only selected tiers with a positive count can receive a new entry.
+        const contestNames = Object.keys(limits).filter(name => limits[name] !== false && Number(limits[name]) > 0);
+        mixEl.innerHTML = '';
+        contestNames.forEach(name => {
+            const badge = document.createElement('span');
+            badge.className = `badge ${getContestBadgeClass(name)}`;
+            badge.textContent = `${name} ${counts[name] || 0}/${limits[name] || 0}`;
+            mixEl.appendChild(badge);
+        });
+        if (!select) return;
+        const previous = select.value;
+        select.innerHTML = '';
+        contestNames.forEach(name => {
+            const opt = document.createElement('option');
+            opt.value = name;
+            opt.textContent = `${name} (${counts[name] || 0}/${limits[name] || 0})`;
+            opt.disabled = (counts[name] || 0) >= (limits[name] || 0);
+            select.appendChild(opt);
+        });
+        if ([...select.options].some(o => o.value === previous)) select.value = previous;
+        // A selected tier makes the picker usable even before the first plan exists.
+        select.disabled = select.options.length === 0;
+    }
+
+    function lineupDisplayName(lineupId) {
+        return String(lineupId || '').replace(/^([a-zA-Z]+)_(\d+)$/, (m, p1, p2) => `${p1.charAt(0).toUpperCase() + p1.slice(1)} #${p2}`);
+    }
+
+    function multiplierLabel(multiplier) {
+        return `${Number(multiplier || 1).toFixed(2)}x`;
+    }
+
+    function assignmentMap() {
+        const map = {};
+        const plan = appState.activePlan;
+        if (!plan) return map;
+        plan.lineups.forEach(l => l.slots.forEach(s => {
+            if (s.card) map[s.card.card_id] = { lineupId: l.lineup_id, slotName: s.slot_name, contest: l.contest_name };
+        }));
+        return map;
+    }
+
+    function isGameLocked(athleteKey) {
+        const live = appState.livePlayers[athleteKey];
+        return Boolean(live && live.is_locked);
+    }
+
+    function slotLiveValues(card) {
+        const live = appState.livePlayers[card.athlete_key];
+        const multiplier = Number(card.multiplier || 1);
+        const status = (live && live.game_status) || 'UPCOMING';
+        const actualRaw = status === 'FINAL' ? Number(live?.final_points || 0) : Number(live?.live_points || 0);
+        // Before live state arrives, fall back to the pregame projection, which is what the server seeds as remaining.
+        let remainingRaw = live ? Number(live.remaining_projection || 0) : Number(card.raw_projection || 0);
+        let remainingKnown = true;
+        if (status === 'FINAL') {
+            remainingRaw = 0;
+        } else if (status === 'IN_PROGRESS' && !(live && live.remaining_is_estimate)) {
+            // The server seeds a pregame projection. Without an explicit estimate that is unknown.
+            remainingKnown = false;
+        }
+        const scored = status === 'FINAL' || status === 'IN_PROGRESS';
+        return {
+            status,
+            multiplier,
+            actualRaw,
+            actual: scored ? actualRaw * multiplier : 0,
+            remainingRaw,
+            remaining: remainingKnown ? remainingRaw * multiplier : null,
+            remainingKnown
+        };
+    }
+
+    function lineupTotals(lineup) {
+        let actual = 0;
+        let remaining = 0;
+        let remainingComplete = true;
+        lineup.slots.forEach(s => {
+            if (!s.card) return;
+            const v = slotLiveValues(s.card);
+            actual += v.actual;
+            if (v.remaining === null) remainingComplete = false;
+            else remaining += v.remaining;
+        });
+        return { actual, remaining, remainingComplete };
+    }
+
+    function filteredLineups() {
+        const plan = appState.activePlan;
+        if (!plan) return [];
+        const query = (document.getElementById('lineup-search')?.value || '').trim().toLowerCase();
+        const contest = document.getElementById('lineup-contest-filter')?.value || 'ALL';
+        return plan.lineups.filter(l => {
+            if (contest !== 'ALL' && l.contest_name !== contest) return false;
+            if (!query) return true;
+            const haystack = [l.lineup_id, l.contest_name, ...l.slots.map(s => `${s.slot_name} ${s.slot_kind} ${s.card ? `${s.card.player_name} ${s.card.team}` : ''}`)].join(' ').toLowerCase();
+            return haystack.includes(query);
+        });
+    }
+
+    function syncLineupContestFilter() {
+        const select = document.getElementById('lineup-contest-filter');
+        if (!select) return;
+        const plan = appState.activePlan;
+        const names = plan ? [...new Set(plan.lineups.map(l => l.contest_name))].sort() : [];
+        const previous = select.value;
+        select.innerHTML = '<option value="ALL">All contests</option>';
+        names.forEach(name => {
+            const opt = document.createElement('option');
+            opt.value = name;
+            opt.textContent = name;
+            select.appendChild(opt);
+        });
+        select.value = names.includes(previous) ? previous : 'ALL';
+    }
+
+    function renderLineupsList() {
+        const container = document.getElementById('lineups-container');
+        if (!container) return;
+        syncLineupContestFilter();
+        const all = appState.activePlan ? appState.activePlan.lineups : [];
+        const lineups = filteredLineups();
+        container.innerHTML = '';
+        if (!all.length) {
+            const empty = document.createElement('div');
+            empty.className = 'card';
+            empty.style.cssText = 'text-align: center; padding: 3rem 2rem;';
+            empty.innerHTML = '<p style="font-size: 1.05rem; color: var(--text-secondary);">No lineups yet. Generate lineups above, or add an empty entry after one plan exists.</p>';
+            container.appendChild(empty);
+            return;
+        }
+        if (!lineups.length) {
+            const empty = document.createElement('div');
+            empty.className = 'card';
+            empty.innerHTML = '<p style="color: var(--text-secondary);">No lineup matches this search. Clear the filter to see every lineup again.</p>';
+            container.appendChild(empty);
+            return;
+        }
+        lineups.forEach(lineup => container.appendChild(buildLineupEntry(lineup)));
+    }
+
+    function buildLineupEntry(lineup) {
+        const incomplete = (lineup.validation_errors || []).some(e => /is empty|below minimum/i.test(e));
+        const entry = document.createElement('section');
+        entry.id = `lineup-entry-${lineup.lineup_id}`;
+        entry.className = `card lineup-entry ${lineup.is_locked ? 'status-locked' : (lineup.is_valid ? '' : (incomplete ? 'status-incomplete' : 'status-invalid'))}`;
+
+        const cap = getContestCap(lineup.contest_name);
+        const capPct = cap ? Math.min(100, Math.round((lineup.total_salary / cap) * 100)) : 0;
+        const totals = lineupTotals(lineup);
+        const filled = lineup.slots.filter(s => s.card).length;
+        const remainingText = totals.remainingComplete ? `${totals.remaining.toFixed(1)} pts` : `${totals.remaining.toFixed(1)} pts + unknown`;
+        const projectedTotal = totals.actual + totals.remaining;
+        const projectedText = totals.remainingComplete ? `${projectedTotal.toFixed(1)} pts` : `${projectedTotal.toFixed(1)} pts + unknown`;
+
+        const head = document.createElement('div');
+        head.className = 'lineup-entry-head';
+        head.innerHTML = `
+            <div style="flex: 1; min-width: 0;">
+                <div class="lineup-entry-title">
+                    <h3>${escapeHtml(lineupDisplayName(lineup.lineup_id))}</h3>
+                    <span class="badge ${getContestBadgeClass(lineup.contest_name)}">${escapeHtml(lineup.contest_name)}</span>
+                    ${lineup.is_locked ? '<span class="badge badge-info">Lineup locked</span>' : ''}
+                    ${lineup.is_valid
+                        ? '<span class="badge badge-success">Valid</span>'
+                        : `<span class="badge ${incomplete ? 'badge-warning' : 'badge-danger'}">${incomplete ? 'Incomplete draft' : 'Needs attention'}</span>`}
+                </div>
+                <div class="lineup-metrics">
+                    <span>Salary <strong>$${lineup.total_salary.toLocaleString()}</strong> of $${cap.toLocaleString()} (<strong>${capPct}%</strong>)</span>
+                    <span>Remaining salary <strong>$${lineup.remaining_salary.toLocaleString()}</strong></span>
+                    <span>Projected <strong>${projectedText}</strong></span>
+                    <span>Actual <strong>${totals.actual.toFixed(1)} pts</strong></span>
+                    <span>Remaining projected <strong>${remainingText}</strong></span>
+                    <span>Slots filled <strong>${filled}/${lineup.slots.length}</strong></span>
+                </div>
+                <div class="salary-bar-container" aria-hidden="true">
+                    <div class="salary-bar-fill" style="width: ${capPct}%; background: ${lineup.remaining_salary < 0 ? 'var(--danger)' : 'var(--accent)'}"></div>
+                </div>
+                ${lineup.validation_errors.length ? `<p class="cell-note" style="color: var(--text-secondary);">${escapeHtml(lineup.validation_errors.join(' '))}</p>` : ''}
+                ${lineup.unused_salary_flag && lineup.unused_salary_note ? `<p class="cell-note">${escapeHtml(lineup.unused_salary_note)}</p>` : ''}
+            </div>
+            <div class="lineup-actions" role="group" aria-label="Actions for ${escapeHtml(lineupDisplayName(lineup.lineup_id))}">
+                <button class="secondary small" onclick="rebuildLineup('${lineup.lineup_id}')" ${appState.busy ? 'disabled' : ''}>Rebuild unlocked slots</button>
+                <button class="secondary small" onclick="toggleLineupLock('${lineup.lineup_id}')" ${appState.busy ? 'disabled' : ''}>${lineup.is_locked ? 'Unlock lineup' : 'Lock lineup'}</button>
+                <button class="secondary small danger" onclick="removeLineup('${lineup.lineup_id}')" ${appState.busy ? 'disabled' : ''}>Remove lineup</button>
+            </div>`;
+        entry.appendChild(head);
+
+        const wrap = document.createElement('div');
+        wrap.className = 'table-wrap';
+        const table = document.createElement('table');
+        table.className = 'lineup-slot-table';
+        table.innerHTML = `<caption style="text-align: left; color: var(--text-secondary); margin: 0.5rem 0 0.35rem;">All ${lineup.slots.length} player slots. The card multiplier applies once to raw points (pregame raw x mult = adjusted).</caption>
+            <thead><tr>
+                <th scope="col">Slot</th><th scope="col">Player</th><th scope="col">Team</th>
+                <th scope="col" class="numeric">Mult</th><th scope="col" class="numeric">Salary</th>
+                <th scope="col" class="numeric">Pregame</th><th scope="col" class="numeric">Adj proj</th>
+                <th scope="col">Status</th><th scope="col" class="numeric">Actual</th><th scope="col" class="numeric">Remaining</th>
+                <th scope="col" style="text-align: right;">Actions</th>
+            </tr></thead>`;
+        const tbody = document.createElement('tbody');
+        lineup.slots.forEach(slot => tbody.appendChild(buildSlotRow(lineup, slot)));
+        table.appendChild(tbody);
+        wrap.appendChild(table);
+        entry.appendChild(wrap);
+        return entry;
+    }
+
+    function buildSlotRow(lineup, slot) {
+        const tr = document.createElement('tr');
+        const card = slot.card;
+        const posPill = `<span class="slot-pill pos-${escapeHtml(String(slot.slot_kind).toUpperCase())}">${escapeHtml(slot.slot_kind)}</span>`;
+        const lockIcon = slot.is_locked ? '<span title="Placement locked against regeneration">&#128274;</span>' : '';
+        if (!card) {
+            tr.innerHTML = `
+                <td>${posPill}</td>
+                <td colspan="6" style="color: var(--text-secondary);">&lt;Empty slot&gt; · needs ${escapeHtml(slot.slot_kind)}</td>
+                <td colspan="3" class="cell-note">${lineup.is_locked ? 'Unlock the lineup to fill this slot.' : 'Required slot still to fill.'}</td>
+                <td style="text-align: right;"><div class="slot-actions"><button class="secondary small" onclick="openSwapModal('${lineup.lineup_id}', '${slot.slot_name}', '${slot.slot_kind}')">Fill slot</button></div></td>`;
+            return tr;
+        }
+
+        const v = slotLiveValues(card);
+        const gameLocked = isGameLocked(card.athlete_key);
+        const actualCell = v.status === 'UPCOMING'
+            ? '<span style="color: var(--text-secondary);">-</span>'
+            : `${v.actualRaw.toFixed(1)} <span style="color: var(--text-secondary);font-size:0.75rem;">x${v.multiplier.toFixed(2)} = ${v.actual.toFixed(1)}</span>`;
+        const remainingCell = v.remainingKnown
+            ? v.remainingRaw.toFixed(1)
+            : '<span class="cell-note">unknown (no estimate)</span>';
+
+        tr.innerHTML = `
+            <td>${posPill} ${lockIcon}</td>
+            <td>
+                <div style="font-weight: 600; color: #fff;">${escapeHtml(card.player_name)}</div>
+                <div style="font-size: 0.74rem; color: var(--text-secondary);">${escapeHtml(slot.slot_name)} · ${escapeHtml(card.position)}</div>
+            </td>
+            <td><span class="team-chip">${escapeHtml(card.team)}</span></td>
+            <td class="numeric"><span class="mult-badge">${multiplierLabel(card.multiplier)}</span></td>
+            <td class="numeric">$${card.weekly_salary.toLocaleString()}</td>
+            <td class="numeric" style="color: var(--text-secondary);">${card.raw_projection.toFixed(1)}</td>
+            <td class="numeric" style="color: var(--accent); font-weight: 700;">${card.adjusted_projection.toFixed(2)}</td>
+            <td class="status-cell">${gameLocked ? '<div class="cell-note" style="color: var(--danger);">Game started</div>' : ''}</td>
+            <td class="numeric">${actualCell}</td>
+            <td class="numeric">${remainingCell}</td>
+            <td>
+                <div class="slot-actions">
+                    <button class="secondary small" onclick="openSwapModal('${lineup.lineup_id}', '${slot.slot_name}', '${slot.slot_kind}')">Swap</button>
+                    <button class="secondary small" onclick="openMoveModal('${lineup.lineup_id}', '${slot.slot_name}')">Move</button>
+                    <button class="secondary small" onclick="clearSlot('${lineup.lineup_id}', '${slot.slot_name}')">Clear</button>
+                    <button class="secondary small" onclick="toggleSlotLock('${lineup.lineup_id}', '${slot.slot_name}')">${slot.is_locked ? 'Unlock slot' : 'Lock slot'}</button>
+                    <button class="secondary small" onclick="openScoreModal('${card.athlete_key}', '${card.card_id}', '${lineup.lineup_id}', '${slot.slot_name}')">Score / status</button>
+                    <button class="secondary small" onclick="excludePlayer('${card.athlete_key}', ${appState.excludedPlayers.includes(card.athlete_key) ? 'false' : 'true'})">${appState.excludedPlayers.includes(card.athlete_key) ? 'Include' : 'Exclude'}</button>
+                </div>
+            </td>`;
+
+        const statusSelect = document.createElement('select');
+        statusSelect.style.minHeight = '2rem';
+        statusSelect.setAttribute('aria-label', `Game status for ${card.player_name} in ${lineupDisplayName(lineup.lineup_id)} ${slot.slot_name}`);
+        ['UPCOMING', 'IN_PROGRESS', 'FINAL'].forEach(st => {
+            const opt = document.createElement('option');
+            opt.value = st;
+            opt.textContent = st === 'IN_PROGRESS' ? 'In progress' : (st === 'FINAL' ? 'Final' : 'Upcoming');
+            statusSelect.appendChild(opt);
+        });
+        statusSelect.value = v.status;
+        statusSelect.onchange = () => {
+            if (isBusy()) { statusSelect.value = v.status; return; }
+            if (statusSelect.value === 'FINAL') {
+                openScoreModal(card.athlete_key, card.card_id, lineup.lineup_id, slot.slot_name, 'FINAL');
+                return;
+            }
+            updatePlayerStatus(card.athlete_key, statusSelect.value);
+        };
+        tr.querySelector('.status-cell').appendChild(statusSelect);
+        return tr;
+    }
+
+    async function addEntry() {
+        if (isBusy()) return;
+        const select = document.getElementById('add-entry-contest');
+        const contestName = select ? select.value : '';
+        if (!contestName) {
+            notify('Select a contest tier before adding an entry.', 'error');
+            return;
+        }
+        const contestDistribution = {};
+        for (const checkbox of document.querySelectorAll('.contest-selected')) {
+            const name = checkbox.dataset.contest;
+            const input = [...document.querySelectorAll('.contest-limit')].find(el => el.dataset.contest === name);
+            if (input && !input.reportValidity()) return;
+            contestDistribution[name] = checkbox.checked && input ? Number(input.value) : 0;
+        }
+        if (!contestDistribution[contestName]) {
+            notify(`Set the ${contestName} entry count above zero before adding an entry.`, 'error');
+            return;
+        }
+        beginRequest(`Adding an empty ${contestName} entry`);
+        const { ok, data } = await postJson('/api/planner/edit_lineup', {
+            action: 'add',
+            contest_name: contestName,
+            entry_limit: contestDistribution[contestName],
+            contest_distribution: contestDistribution,
+        });
+        endRequest();
+        if (!ok) { notify(data.message || 'Could not add that entry.', 'error'); return; }
+        // Keep the controls the user set; do not snap the limits back to the plan.
+        appState.contestsInitialized = true;
+        renderPlan(data.plan);
+        markUnsaved();
+        notify(`${data.message} Fill its slots with Swap or Move.`, 'success');
+    }
+
+    async function rebuildLineup(lineupId) {
+        if (isBusy()) return;
+        beginRequest(`Rebuilding ${lineupDisplayName(lineupId)}`);
+        const { ok, data } = await postJson('/api/planner/edit_lineup', { lineup_id: lineupId, action: 'rebuild' });
+        endRequest();
+        if (!ok) { notify(data.message || 'Rebuild was rejected. The lineup is unchanged.', 'error'); return; }
+        renderPlan(data.plan);
+        markUnsaved();
+        notify(`Rebuilt unlocked slots in ${lineupDisplayName(lineupId)}. Locked slots and scores stayed put.`, 'success');
+    }
+
+    async function removeLineup(lineupId) {
+        if (isBusy()) return;
+        beginRequest(`Removing ${lineupDisplayName(lineupId)}`);
+        const { ok, data } = await postJson('/api/planner/edit_lineup', { lineup_id: lineupId, action: 'remove' });
+        endRequest();
+        if (!ok) { notify(data.message || 'Remove was rejected. The lineup is unchanged.', 'error'); return; }
+        renderPlan(data.plan);
+        markUnsaved();
+        notify(`${lineupDisplayName(lineupId)} removed. Its cards are available again.`, 'success');
+    }
+
+    async function rebuildAllLineups() {
+        if (isBusy()) return;
+        const plan = appState.activePlan;
+        if (!plan || !plan.lineups.length) { notify('Generate or add a lineup first.', 'error'); return; }
+        const ids = plan.lineups.filter(l => !l.is_locked).map(l => l.lineup_id);
+        if (!ids.length) { notify('Every lineup is locked. Unlock one before rebuilding.', 'error'); return; }
+        beginRequest('Rebuilding unlocked slots');
+        let latestPlan = null;
+        let rebuilt = 0;
+        const problems = [];
+        for (const id of ids) {
+            const { ok, data } = await postJson('/api/planner/edit_lineup', { lineup_id: id, action: 'rebuild' });
+            if (ok) { latestPlan = data.plan; rebuilt += 1; }
+            else problems.push(`${lineupDisplayName(id)}: ${data.message}`);
+        }
+        endRequest();
+        if (latestPlan) { renderPlan(latestPlan); markUnsaved(); }
+        if (problems.length) notify(`Rebuilt ${rebuilt} lineups. ${problems.join(' ')}`, 'error');
+        else notify(`Rebuilt ${rebuilt} lineups. Locked slots and scores stayed put.`, 'success');
+    }
+
+    async function clearSlot(lineupId, slotName) {
+        if (isBusy()) return;
+        beginRequest(`Clearing ${slotName}`);
+        const { ok, data } = await postJson('/api/planner/edit_lineup', { lineup_id: lineupId, action: 'clear', slot_name: slotName });
+        endRequest();
+        if (!ok) { notify(data.message || 'That slot could not be cleared.', 'error'); return; }
+        renderPlan(data.plan);
+        markUnsaved();
+        notify(`${data.message} The slot is empty and stays editable.`, 'success');
+    }
+
+    async function toggleLineupLock(lineupId) {
+        if (isBusy()) return;
+        beginRequest('Updating lineup lock');
+        const { ok, data } = await postJson('/api/planner/toggle_lock', { lineup_id: lineupId });
+        endRequest();
+        if (!ok) { notify(data.message || 'Lock change rejected.', 'error'); return; }
+        const plan = appState.activePlan;
+        if (plan && data.lineup) {
+            const index = plan.lineups.findIndex(l => l.lineup_id === lineupId);
+            if (index >= 0) plan.lineups[index] = data.lineup;
+        }
+        renderWorkspace();
+        markUnsaved();
+        notify(data.lineup && data.lineup.is_locked
+            ? `${lineupDisplayName(lineupId)} locked. Every slot is protected from regeneration.`
+            : `${lineupDisplayName(lineupId)} unlocked.`, 'success');
+    }
+
+    async function toggleSlotLock(lineupId, slotName) {
+        if (isBusy()) return;
+        beginRequest(`Updating lock on ${slotName}`);
+        const { ok, data } = await postJson('/api/planner/toggle_lock', { lineup_id: lineupId, slot_name: slotName });
+        endRequest();
+        if (!ok) { notify(data.message || 'Lock change rejected.', 'error'); return; }
+        const plan = appState.activePlan;
+        if (plan && data.lineup) {
+            const index = plan.lineups.findIndex(l => l.lineup_id === lineupId);
+            if (index >= 0) plan.lineups[index] = data.lineup;
+        }
+        const slot = data.lineup ? data.lineup.slots.find(s => s.slot_name === slotName) : null;
+        renderWorkspace();
+        markUnsaved();
+        notify(slot && slot.is_locked
+            ? `${slotName} locked in ${lineupDisplayName(lineupId)}. Regeneration keeps this player.`
+            : `${slotName} unlocked in ${lineupDisplayName(lineupId)}.`, 'success');
+    }
+
+    function slotKindAccepts(kind, position) {
+        const normalized = String(kind || '').toUpperCase();
+        if (normalized === 'FLEX') return ['RB', 'WR', 'TE'].includes(position);
+        if (normalized === 'SUPERFLEX') return ['QB', 'RB', 'WR', 'TE'].includes(position);
+        return normalized === position;
+    }
+
+    function openMoveModal(lineupId, slotName) {
+        appState.moveContext = { lineupId, slotName };
+        const search = document.getElementById('move-search');
+        if (search) search.value = '';
+        openModal('move-modal');
+        renderMoveDestinations();
+    }
+
+    function renderMoveDestinations() {
+        const list = document.getElementById('move-destination-list');
+        const feedback = document.getElementById('move-feedback');
+        if (!list) return;
+        const plan = appState.activePlan;
+        const { lineupId, slotName } = appState.moveContext;
+        list.innerHTML = '';
+        if (!plan) { feedback.textContent = 'No active plan.'; return; }
+        const sourceLineup = plan.lineups.find(l => l.lineup_id === lineupId);
+        const sourceSlot = sourceLineup ? sourceLineup.slots.find(s => s.slot_name === slotName) : null;
+        if (!sourceSlot || !sourceSlot.card) {
+            feedback.textContent = 'That source slot is empty or no longer exists. Close this dialog and reopen it.';
+            return;
+        }
+        const sourceCard = sourceSlot.card;
+        const query = (document.getElementById('move-search')?.value || '').trim().toLowerCase();
+        feedback.textContent = `Moving ${sourceCard.player_name} (${multiplierLabel(sourceCard.multiplier)}). Blocked destinations stay visible with the reason.`;
+        let shown = 0;
+        plan.lineups.forEach(targetLineup => {
+            const rows = targetLineup.slots.map(targetSlot => {
+                let reason = '';
+                if (targetLineup.lineup_id === lineupId && targetSlot.slot_name === slotName) reason = 'This is the source slot.';
+                else if (targetLineup.is_locked) reason = 'Destination lineup is locked.';
+                else if (targetSlot.is_locked) reason = 'Destination slot is locked.';
+                else if (targetSlot.card && !slotKindAccepts(targetSlot.slot_kind, sourceCard.position)) reason = `${targetSlot.slot_kind} cannot hold ${sourceCard.position} (${sourceCard.player_name}).`;
+                else if (targetSlot.card && !slotKindAccepts(sourceSlot.slot_kind, targetSlot.card.position)) reason = `${targetSlot.card.player_name} (${targetSlot.card.position}) cannot fill the source ${sourceSlot.slot_kind} slot.`;
+                else if (targetSlot.card && targetLineup.slots.some(s => s.card && s.card.athlete_key === sourceCard.athlete_key && s.slot_name !== targetSlot.slot_name)) reason = `${sourceCard.player_name} is already in that lineup.`;
+                else if (targetSlot.card && targetLineup.lineup_id !== lineupId && sourceLineup.slots.some(s => s.card && s.card.athlete_key === targetSlot.card.athlete_key && s.slot_name !== slotName)) reason = `${targetSlot.card.player_name} is already in the source lineup.`;
+                else if (!targetSlot.card && !slotKindAccepts(targetSlot.slot_kind, sourceCard.position)) reason = `Slot requires ${targetSlot.slot_kind}.`;
+                else if (!targetSlot.card && targetLineup.lineup_id === lineupId && targetLineup.slots.some(s => s.card && s.card.athlete_key === sourceCard.athlete_key && s.slot_name !== slotName)) reason = 'That athlete is already in this lineup.';
+                const haystack = `${targetLineup.contest_name} ${lineupDisplayName(targetLineup.lineup_id)} ${targetSlot.slot_name} ${targetSlot.slot_kind} ${targetSlot.card ? targetSlot.card.player_name : 'empty'}`.toLowerCase();
+                if (query && !haystack.includes(query)) return null;
+                shown += 1;
+                const row = document.createElement('div');
+                row.className = `destination-row${reason ? ' is-blocked' : ''}`;
+                row.innerHTML = `
+                    <div style="min-width: 0;">
+                        <div><strong>${escapeHtml(lineupDisplayName(targetLineup.lineup_id))}</strong> <span class="badge ${getContestBadgeClass(targetLineup.contest_name)}">${escapeHtml(targetLineup.contest_name)}</span></div>
+                        <div style="font-size: 0.78rem; color: var(--text-secondary);">
+                            ${escapeHtml(targetSlot.slot_name)} (${escapeHtml(targetSlot.slot_kind)}) ·
+                            ${targetSlot.card ? `${escapeHtml(targetSlot.card.player_name)} ${multiplierLabel(targetSlot.card.multiplier)}` : 'Empty slot'}
+                        </div>
+                        ${reason ? `<div class="destination-reason">${escapeHtml(reason)}</div>` : ''}
+                    </div>`;
+                const button = document.createElement('button');
+                button.className = 'secondary small';
+                button.textContent = targetSlot.card ? 'Exchange' : 'Move here';
+                button.disabled = Boolean(reason) || appState.busy;
+                if (reason) button.title = reason;
+                else button.onclick = () => executeMove(targetLineup.lineup_id, targetSlot.slot_name);
+                row.appendChild(button);
+                return row;
+            }).filter(Boolean);
+            if (rows.length) {
+                const group = document.createElement('div');
+                const heading = document.createElement('div');
+                heading.style.cssText = 'font-size: 0.8rem; color: var(--text-secondary); margin: 0.5rem 0 0.25rem;';
+                heading.textContent = `${lineupDisplayName(targetLineup.lineup_id)} · ${targetLineup.contest_name}`;
+                group.appendChild(heading);
+                rows.forEach(r => group.appendChild(r));
+                list.appendChild(group);
+            }
+        });
+        if (!shown) list.innerHTML = '<div style="color: var(--text-secondary); padding: 0.5rem;">No destination matches this filter.</div>';
+    }
+
+    async function executeMove(destinationLineupId, destinationSlotName) {
+        if (isBusy()) return;
+        const { lineupId, slotName } = appState.moveContext;
+        beginRequest('Moving card');
+        const { ok, data } = await postJson('/api/planner/move', {
+            source_lineup_id: lineupId,
+            source_slot_name: slotName,
+            destination_lineup_id: destinationLineupId,
+            destination_slot_name: destinationSlotName
+        });
+        endRequest();
+        if (!ok) {
+            const feedback = document.getElementById('move-feedback');
+            const message = `${data.message || 'That move was rejected.'} Both entries are unchanged.`;
+            if (feedback) feedback.textContent = message;
+            notify(message, 'error');
+            return;
+        }
+        closeModal('move-modal');
+        renderPlan(data.plan);
+        markUnsaved();
+        const affected = (data.affected_lineup_ids || []).map(lineupDisplayName).join(' and ');
+        notify(`${data.message} Updated ${affected}.`, 'success');
+    }
+
+    async function updatePlayerStatus(athleteKey, status) {
+        if (isBusy()) return;
+        beginRequest(`Setting status to ${status}`);
+        const { ok, data } = await postJson('/api/live/update_player_state', { athlete_key: athleteKey, game_status: status });
+        endRequest();
+        if (!ok) { notify(data.message || 'Status change was rejected. Previous values are unchanged.', 'error'); return; }
+        markUnsaved();
+        await fetchLiveState();
+        notify(`${status === 'IN_PROGRESS' ? 'In progress' : status === 'UPCOMING' ? 'Upcoming' : 'Final'} saved. Started players stay protected.`, 'success');
+    }
+
+
+    async function openSwapModal(lineupId, slotName, slotKind) {
+        if (appState.busy) { setStatus('Wait for the running request to finish.', 'pending'); return; }
+        appState.swapContext = { lineupId, slotName, slotKind };
+        document.getElementById('swap-modal-title').textContent = `Swap ${slotName} (${slotKind}) in ${lineupDisplayName(lineupId)}`;
+        document.getElementById('swap-search').value = '';
+        appState.swapCandidates = [];
+        openModal('swap-modal');
+        document.getElementById('swap-feedback').textContent = 'Finding available replacements that fit this lineup...';
+        try {
+            const res = await fetch('/api/planner/candidates?' + new URLSearchParams({lineup_id: lineupId, slot_name: slotName}));
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.message);
+            appState.swapCandidates = data.cards;
+            renderSwapCandidates();
+        } catch (error) {
+            document.getElementById('swap-feedback').textContent = `${error.message} No card was changed.`;
+        }
+    }
+
+    function escapeHtml(value) {
+        const el = document.createElement('span');
+        el.textContent = value;
+        return el.innerHTML;
+    }
+
+    function renderSwapCandidates() {
+        const tbody = document.getElementById('swap-candidates-tbody');
+        tbody.innerHTML = '';
+        const query = document.getElementById('swap-search').value.toLowerCase();
+        const candidates = (appState.swapCandidates || []).filter(c => (c.player_name + ' ' + c.team).toLowerCase().includes(query));
+        document.getElementById('swap-feedback').textContent = `${candidates.length} available replacements. All fit the salary and contest rules.`;
+        for (const c of candidates) {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `<td><strong>${escapeHtml(c.player_name)}</strong><div class="muted">${escapeHtml(c.collection || 'Core')} · ${c.multiplier.toFixed(2)}x</div></td>
+                <td>${escapeHtml(c.position)}</td><td>${escapeHtml(c.team)}</td>
+                <td class="numeric">$${c.weekly_salary.toLocaleString()}</td>
+                <td class="numeric">${c.adjusted_projection.toFixed(2)}</td>
+                <td class="numeric">${c.projection_delta >= 0 ? '+' : ''}${c.projection_delta.toFixed(2)}</td>
+                <td class="numeric">$${c.remaining_salary.toLocaleString()}</td><td></td>`;
+            const button = document.createElement('button');
+            button.className = 'small'; button.textContent = 'Use player';
+            button.onclick = () => executeSwap(c.card_id);
+            tr.lastElementChild.appendChild(button);
+            tbody.appendChild(tr);
+        }
+    }
+
+    function filterSwapCandidates() {
+        renderSwapCandidates();
+    }
+
+    async function executeSwap(cardId) {
+        if (isBusy()) return;
+        const { lineupId, slotName } = appState.swapContext;
+        beginRequest(`Swapping ${slotName}`);
+        const { ok, data } = await postJson('/api/planner/swap', {
+            lineup_id: lineupId,
+            slot_name: slotName,
+            new_card_id: cardId
+        });
+        endRequest();
+        if (!ok) {
+            document.getElementById('swap-feedback').textContent = `${data.message || 'Could not swap.'} The lineup is unchanged.`;
+            return;
+        }
+        closeModal('swap-modal');
+        const plan = appState.activePlan;
+        if (plan && data.lineup) {
+            const index = plan.lineups.findIndex(l => l.lineup_id === lineupId);
+            if (index >= 0) plan.lineups[index] = data.lineup;
+        }
+        await fetchLiveState();
+        renderWorkspace();
+        markUnsaved();
+        notify(`${data.message} ${slotName} in ${lineupDisplayName(lineupId)} is now locked to that player.`, 'success');
+    }
+
+    function openOverridesModal() {
+        renderOverridesTable();
+        openModal('overrides-modal');
+    }
+
+    function renderOverridesTable() {
+        const tbody = document.getElementById('overrides-tbody');
+        tbody.innerHTML = '';
+        const entries = Object.entries(appState.overrides);
+        if (entries.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="3" style="color: var(--text-secondary);">No active projection overrides.</td></tr>';
+            return;
+        }
+        entries.forEach(([key, val]) => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td><strong>${key}</strong></td>
+                <td>${val.toFixed(2)} pts</td>
+                <td><button class="secondary small danger" onclick="resetOverride('${key}')">Reset</button></td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    async function saveOverride() {
+        const key = (document.getElementById('override-player-input').value || '').trim().toLowerCase().replace(/[^a-z0-9]/g, '');
+        const val = parseFloat(document.getElementById('override-val-input').value);
+        if (!key || isNaN(val)) {
+            notify('Enter a valid athlete key and projection before setting an override.', 'error');
+            return;
+        }
+        try {
+            const res = await fetch('/api/overrides/update', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ athlete_key: key, override_value: val })
+            });
+            const data = await res.json();
+            if (data.status === 'success') {
+                appState.overrides = data.overrides;
+                renderOverridesTable();
+                document.getElementById('override-player-input').value = '';
+                document.getElementById('override-val-input').value = '';
+                fetchAppState();
+            }
+        } catch (e) {
+            notify(`Error setting override: ${e}`, 'error');
+        }
+    }
+
+    async function resetOverride(key) {
+        try {
+            const res = await fetch('/api/overrides/update', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ athlete_key: key, reset: true })
+            });
+            const data = await res.json();
+            if (data.status === 'success') {
+                appState.overrides = data.overrides;
+                renderOverridesTable();
+                fetchAppState();
+            }
+        } catch (e) {
+            notify(`Reset error: ${e}`, 'error');
+        }
+    }
+
+    function openRulesModal() {
+        openModal('rules-modal');
+    }
+
+    async function openRequirementsModal() {
+        try {
+            const res = await fetch('/api/requirements');
+            const data = await res.json();
+            const list = document.getElementById('requirements-list');
+            list.innerHTML = '';
+            data.requirements.forEach(r => {
+                const item = document.createElement('div');
+                item.style.background = 'var(--surface-muted)';
+                item.style.padding = '0.85rem';
+                item.style.borderRadius = '8px';
+                item.style.marginBottom = '0.65rem';
+                item.innerHTML = `
+                    <div style="font-weight: 600; color: var(--accent);">${r.requirement}</div>
+                    <div style="font-size: 0.82rem; color: var(--text-secondary); margin: 0.2rem 0;">Status: <strong>${r.current_status}</strong></div>
+                    <div style="font-size: 0.85rem;"><strong>Impact:</strong> ${r.impact}</div>
+                    <div style="font-size: 0.85rem; color: var(--info); margin-top: 0.25rem;"><strong>Required:</strong> ${r.what_is_needed}</div>
+                `;
+                list.appendChild(item);
+            });
+            openModal('requirements-modal');
+        } catch (e) {
+            console.error('Failed to load requirements', e);
+        }
+    }
+
+    function setRosterSort(key) {
+        const defaultDir = ['mult', 'adj_proj', 'salary'].includes(key) ? 'desc' : 'asc';
+        if (appState.rosterSort.key !== key) {
+            appState.rosterSort.key = key;
+            appState.rosterSort.dir = defaultDir;
+        } else if (appState.rosterSort.dir === defaultDir) {
+            appState.rosterSort.dir = defaultDir === 'asc' ? 'desc' : 'asc';
+        } else {
+            appState.rosterSort.key = null;
+            appState.rosterSort.dir = 'asc';
+        }
+        renderRosterPanel();
+    }
+
+    function updateRosterSortHeaders() {
+        const ths = document.querySelectorAll('.roster-table th.sortable');
+        ths.forEach(th => {
+            const col = th.dataset.col;
+            const icon = th.querySelector('.sort-icon');
+            if (appState.rosterSort.key === col) {
+                th.classList.add('is-sorted');
+                const isAsc = appState.rosterSort.dir === 'asc';
+                th.setAttribute('aria-sort', isAsc ? 'ascending' : 'descending');
+                if (icon) icon.textContent = isAsc ? '▲' : '▼';
+            } else {
+                th.classList.remove('is-sorted');
+                th.setAttribute('aria-sort', 'none');
+                if (icon) icon.textContent = '↕';
+            }
+        });
+    }
+
+    function getAvailabilityStatus(card, assigned) {
+        const excluded = appState.excludedPlayers.includes(card.athlete_key);
+        const gameLocked = isGameLocked(card.athlete_key);
+        if (excluded) {
+            return { label: 'Excluded', fullText: 'Excluded by you', className: 'status-pill status-excluded' };
+        }
+        if (!card.is_matched) {
+            return { label: 'No match', fullText: 'No projection match', className: 'status-pill status-nomatch' };
+        }
+        if (!card.is_eligible) {
+            return { label: 'Ineligible', fullText: card.ineligibility_reason || 'Ineligible', className: 'status-pill status-ineligible' };
+        }
+        if (gameLocked) {
+            return { label: 'Started', fullText: 'Game started; manual edits allowed', className: 'status-pill status-locked' };
+        }
+        if (assigned) {
+            return { label: 'Assigned', fullText: 'Available (already assigned)', className: 'status-pill status-assigned' };
+        }
+        return { label: 'Available', fullText: 'Available', className: 'status-pill status-avail' };
+    }
+
+    function renderRosterPanel() {
+        const tbody = document.getElementById('roster-tbody');
+        if (!tbody) return;
+        const query = (document.getElementById('roster-search')?.value || '').trim().toLowerCase();
+        const position = document.getElementById('roster-pos-filter')?.value || 'ALL';
+        const availability = document.getElementById('roster-avail-filter')?.value || 'ALL';
+        const assignments = assignmentMap();
+        const rows = appState.cards.filter(card => {
+            const assigned = Boolean(assignments[card.card_id]);
+            const excluded = appState.excludedPlayers.includes(card.athlete_key);
+            const gameLocked = isGameLocked(card.athlete_key);
+            if (position !== 'ALL' && card.position !== position) return false;
+            if (query && !`${card.player_name} ${card.team}`.toLowerCase().includes(query)) return false;
+            if (availability === 'AVAILABLE' && (!card.is_eligible || assigned)) return false;
+            if (availability === 'ASSIGNED' && !assigned) return false;
+            if (availability === 'UNASSIGNED' && assigned) return false;
+            if (availability === 'EXCLUDED' && !excluded) return false;
+            if (availability === 'INELIGIBLE' && card.is_eligible) return false;
+            if (availability === 'GAME_LOCKED' && !gameLocked) return false;
+            return true;
+        });
+
+        if (appState.rosterSort && appState.rosterSort.key) {
+            const key = appState.rosterSort.key;
+            const mult = appState.rosterSort.dir === 'asc' ? 1 : -1;
+            rows.sort((a, b) => {
+                if (key === 'player') {
+                    const valA = (a.player_name || '').toLowerCase();
+                    const valB = (b.player_name || '').toLowerCase();
+                    return valA.localeCompare(valB) * mult;
+                }
+                if (key === 'pos') {
+                    const posA = a.position || '';
+                    const posB = b.position || '';
+                    const cmp = posA.localeCompare(posB);
+                    if (cmp !== 0) return cmp * mult;
+                    return (b.adjusted_projection - a.adjusted_projection);
+                }
+                if (key === 'mult') {
+                    const multA = Number(a.multiplier) || 0;
+                    const multB = Number(b.multiplier) || 0;
+                    return (multA - multB) * mult;
+                }
+                if (key === 'adj_proj') {
+                    const projA = Number(a.adjusted_projection) || 0;
+                    const projB = Number(b.adjusted_projection) || 0;
+                    return (projA - projB) * mult;
+                }
+                if (key === 'salary') {
+                    const salA = Number(a.weekly_salary) || 0;
+                    const salB = Number(b.weekly_salary) || 0;
+                    return (salA - salB) * mult;
+                }
+                if (key === 'assignment') {
+                    const assignA = assignments[a.card_id];
+                    const assignB = assignments[b.card_id];
+                    const strA = assignA ? `${lineupDisplayName(assignA.lineupId)} ${assignA.slotName}` : '';
+                    const strB = assignB ? `${lineupDisplayName(assignB.lineupId)} ${assignB.slotName}` : '';
+                    if (strA && !strB) return -1 * mult;
+                    if (!strA && strB) return 1 * mult;
+                    return strA.localeCompare(strB) * mult;
+                }
+                if (key === 'availability') {
+                    const statA = getAvailabilityStatus(a, assignments[a.card_id]).label;
+                    const statB = getAvailabilityStatus(b, assignments[b.card_id]).label;
+                    return statA.localeCompare(statB) * mult;
+                }
+                return 0;
+            });
+        }
+
+        const countEl = document.getElementById('roster-panel-count');
+        if (countEl) countEl.textContent = `Showing ${rows.length} of ${appState.cards.length} owned copies.`;
+        updateRosterSortHeaders();
+        tbody.innerHTML = '';
+        rows.forEach(card => {
+            const assigned = assignments[card.card_id];
+            const excluded = appState.excludedPlayers.includes(card.athlete_key);
+            const status = getAvailabilityStatus(card, assigned);
+            const tr = document.createElement('tr');
+            tr.className = `roster-row${assigned ? ' is-assigned' : ''}${card.is_eligible ? '' : ' is-unavailable'}${excluded ? ' is-excluded' : ''}`;
+            tr.innerHTML = `
+                <td>
+                    <div style="font-weight: 600; color: #fff; line-height: 1.2;">${escapeHtml(card.player_name)}</div>
+                    <div style="font-size: 0.7rem; color: var(--text-secondary); margin-top: 1px;">${escapeHtml(card.team)} · ${escapeHtml(card.collection || 'Core')}</div>
+                </td>
+                <td><span style="font-weight: 500;">${escapeHtml(card.position)}</span></td>
+                <td class="numeric"><span class="mult-badge">${multiplierLabel(card.multiplier)}</span></td>
+                <td class="numeric" style="font-weight: 600; color: var(--accent);">${card.adjusted_projection.toFixed(2)}</td>
+                <td class="numeric">$${card.weekly_salary.toLocaleString()}</td>
+                <td>${assigned ? `<span class="badge badge-success" style="font-size: 0.72rem; padding: 0.12rem 0.4rem; white-space: nowrap;">${escapeHtml(lineupDisplayName(assigned.lineupId))} · ${escapeHtml(assigned.slotName)}</span>` : '<span style="color: var(--text-secondary); font-size: 0.75rem;">Unassigned</span>'}</td>
+                <td><span class="${status.className}" title="${escapeHtml(status.fullText)}">${escapeHtml(status.label)}</span></td>
+                <td></td>`;
+            const button = document.createElement('button');
+            button.className = 'secondary small';
+            button.textContent = excluded ? 'Include' : 'Exclude';
+            button.disabled = appState.busy;
+            button.setAttribute('aria-label', `${excluded ? 'Include' : 'Exclude'} ${card.player_name}`);
+            button.onclick = () => excludePlayer(card.athlete_key, !excluded);
+            tr.lastElementChild.appendChild(button);
+            tbody.appendChild(tr);
+        });
+    }
+
+    function focusRosterPanel() {
+        if (appState.activeSection !== 'overview') switchSection('overview');
+        const panel = document.querySelector('.roster-panel');
+        const input = document.getElementById('roster-search');
+        if (panel) panel.scrollIntoView({ block: 'start', behavior: 'smooth' });
+        if (input) input.focus({ preventScroll: true });
+    }
+
+    async function excludePlayer(athleteKey, excluded) {
+        if (isBusy()) return;
+        beginRequest(excluded ? 'Excluding player' : 'Including player');
+        const { ok, data } = await postJson('/api/planner/exclude', { athlete_key: athleteKey, excluded });
+        endRequest();
+        if (!ok) { notify(data.message || 'Could not change that player.', 'error'); return; }
+        appState.excludedPlayers = excluded
+            ? [...new Set([...appState.excludedPlayers, athleteKey])]
+            : appState.excludedPlayers.filter(key => key !== athleteKey);
+        await fetchAppState();
+        markUnsaved();
+        notify(`${data.message} Protected placements keep their lock; unlock a slot to replace it.`, 'success');
+    }
+
+    async function savePlan() {
+        if (isBusy()) return;
+        if (!appState.activePlan) { notify('There is no plan to save yet.', 'error'); return; }
+        beginRequest('Saving plan');
+        const { ok, data } = await postJson('/api/planner/save');
+        endRequest();
+        if (!ok) { notify(data.message || 'Save failed. The previous saved copy is unchanged.', 'error'); return; }
+        appState.unsaved = false;
+        appState.savedAt = new Date().toLocaleTimeString();
+        renderSaveState();
+        notify(`${data.message} Saved at ${appState.savedAt}.`, 'success');
+    }
+
+    async function loadPlan() {
+        if (isBusy()) return;
+        beginRequest('Loading saved plan');
+        const { ok, data } = await postJson('/api/planner/load');
+        endRequest();
+        if (!ok) { notify(data.message || 'Load failed.', 'error'); return; }
+        appState.unsaved = false;
+        appState.savedAt = null;
+        await fetchAppState();
+        await fetchLiveState();
+        notify(`${data.message} Locks, scores and exclusions match the saved copy.`, 'success');
+    }
+
+    function exportPlanCSV() {
+        window.location.href = '/api/planner/export';
+    }
+
+    function openModal(id) {
+        document.getElementById(id).style.display = 'flex';
+    }
+
+    function closeModal(id) {
+        document.getElementById(id).style.display = 'none';
+    }
+
+    async function fetchAppState() {
+        try {
+            const res = await fetch('/api/planner/state');
+            const data = await res.json();
+            if (data.status !== 'success') return;
+            const onboarding = document.getElementById('roster-onboarding');
+            if (onboarding) onboarding.classList.toggle('hidden', data.roster_count > 0);
+            const generateBtn = document.getElementById('generate-plan-btn');
+            if (generateBtn) generateBtn.disabled = data.roster_count === 0;
+            if (!data.active_plan) {
+                const feedback = document.getElementById('generation-feedback');
+                if (feedback) feedback.textContent = data.roster_count
+                    ? `${data.roster_count} cards loaded. No target count needed.` : 'Upload your roster to start.';
+            }
+            appState.excludedPlayers = data.excluded_athlete_keys || [];
+            if (data.cards) appState.cards = data.cards;
+            if (data.overrides) appState.overrides = data.overrides;
+            if (data.active_plan) appState.activePlan = data.active_plan;
+            renderWorkspace();
+        } catch (e) {
+            console.error('State sync error', e);
+            notify('Could not load planner state. Retry with Refresh.', 'error');
+        }
+    }
+
+    // LIVE MANAGER INTEGRATION FUNCTIONS
+    let liveStateData = null;
+
+    function renderDashboardSchedule(schedule) {
+        if (!schedule) {
+            document.getElementById('dashboard-schedule-status').textContent = 'No schedule imported in this server session.';
+            return;
+        }
+        document.getElementById('dashboard-schedule-status').textContent =
+            `${schedule.season} Week ${schedule.week}: ${schedule.games} games, ${schedule.matched_players} players matched, ${schedule.unmatched_players} unmatched. Dashboard export: ${schedule.generated_at || 'timestamp unavailable'}.`;
+    }
+
+    async function importDashboardSchedule(event) {
+        event.preventDefault();
+        const button = event.submitter;
+        button.disabled = true;
+        const status = document.getElementById('dashboard-schedule-status');
+        status.textContent = 'Importing kickoff times...';
+        try {
+            const response = await fetch('/api/live/import_dashboard_schedule', {
+                method: 'POST', headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    season: Number(document.getElementById('dashboard-season').value),
+                    week: Number(document.getElementById('dashboard-week').value)
+                })
+            });
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.message || 'Schedule import failed.');
+            await fetchLiveState();
+        } catch (error) {
+            status.textContent = error.message;
+        } finally {
+            button.disabled = false;
+        }
+    }
+
+    async function fetchLiveState() {
+        try {
+            const res = await fetch('/api/live/state');
+            const data = await res.json();
+            if (data.status !== 'success') return;
+            liveStateData = data;
+            appState.livePlayers = {};
+            (data.players || []).forEach(player => { appState.livePlayers[player.athlete_key] = player; });
+            appState.liveSyncAt = new Date();
+            renderDashboardSchedule(data.dashboard_schedule);
+            renderLiveDashboard(data);
+            renderMissingInputs(data.missing_inputs_report);
+            renderLivePlayersTable(data.players);
+            renderWorkspace();
+        } catch (e) {
+            console.error('Failed to fetch live state', e);
+        }
+    }
+
+    function renderMissingInputs(report) {
+        if (!report) return;
+        const assumptionsEl = document.getElementById('live-assumptions-text');
+        const detailEl = document.getElementById('live-missing-detail');
+
+        const assumptions = report.payout_band_assumptions || report.thresholds_notice || '';
+        if (assumptionsEl) assumptionsEl.textContent = assumptions;
+
+        let detailParts = [];
+        const unverifiedCount = report.unverified_actual_scores ?? report.unverified_scores_count ?? 0;
+        if (unverifiedCount > 0) {
+            detailParts.push(`${unverifiedCount} players with unverified scores`);
+        }
+        const missingKickoffs = report.missing_kickoff_times ?? report.missing_kickoff_times_count ?? 0;
+        if (missingKickoffs > 0) {
+            detailParts.push(`${missingKickoffs} players missing kickoff timestamps`);
+        }
+        const riskNotes = report.risk_model_notes || report.distributions_notice;
+        if (riskNotes) {
+            detailParts.push(riskNotes);
+        }
+        if (detailEl) detailEl.textContent = detailParts.join(' • ');
+    }
+
+    function renderLiveDashboard(data) {
+        const grid = document.getElementById('promising-lineups-grid');
+        grid.innerHTML = '';
+
+        const timelineBadge = document.getElementById('live-timeline-badge');
+        if (data.simulated_time) {
+            timelineBadge.textContent = `Simulation Clock: ${data.simulated_time.replace('T', ' ')}`;
+            timelineBadge.className = 'badge badge-warning';
+        } else {
+            timelineBadge.textContent = 'Timeline: Real-time clock';
+            timelineBadge.className = 'badge badge-info';
+        }
+
+        const lineups = data.lineups || data.promising_lineups || [];
+        if (!lineups || lineups.length === 0) {
+            grid.innerHTML = '<div style="color: var(--text-secondary); padding: 1rem;">No active lineups loaded. Load a plan or test scenario above.</div>';
+            return;
+        }
+
+        lineups.forEach(l => {
+            const card = document.createElement('div');
+            card.className = 'card';
+            const contestTier = l.contest_tier || l.contest_name || '';
+            const bankedScore = l.current_banked_score ?? l.banked_score ?? 0.0;
+            const remainingExp = l.remaining_expected_points ?? l.projected_remaining ?? 0.0;
+            const projTotal = l.projected_total ?? (bankedScore + remainingExp);
+            const expPayout = l.expected_payout ?? 0.0;
+            const pCash = l.p_cash ?? 0.0;
+            const pTop = l.p_top ?? l.p_first ?? 0.0;
+            const topTierName = l.top_tier_name || 'Top Tier';
+            const oppSummary = l.payout_opportunity_summary || l.leverage_explanation || 'Tracking baseline.';
+            card.style.borderLeft = l.leverage_status === 'Top Contender (Chasing 1st)' ? '4px solid #f59e0b' :
+                                   l.leverage_status === 'Surging Contender' ? '4px solid #10b981' :
+                                   l.leverage_status === 'Needs Boom' ? '4px solid #38bdf8' :
+                                   l.leverage_status === 'Eliminated' ? '4px solid #ef4444' : '4px solid var(--border)';
+
+            let statusBadgeClass = l.leverage_status === 'Top Contender (Chasing 1st)' ? 'badge-warning' :
+                                  l.leverage_status === 'Surging Contender' ? 'badge-success' :
+                                  l.leverage_status === 'Needs Boom' ? 'badge-info' :
+                                  l.leverage_status === 'Eliminated' ? 'badge-danger' : 'badge-outline';
+
+            let slotsHtml = (l.slots || []).map(s => {
+                let lockBadge = s.is_locked ? '<span class="badge badge-danger" style="font-size: 0.7rem;">LOCKED</span>' : '<span class="badge badge-success" style="font-size: 0.7rem;">ELIGIBLE</span>';
+                let statusColor = s.game_status === 'FINAL' ? 'var(--text-secondary)' : s.game_status === 'IN_PROGRESS' ? 'var(--warning)' : 'var(--accent)';
+                return `
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.35rem 0; border-bottom: 1px dashed var(--border); font-size: 0.82rem;">
+                        <div>
+                            <strong>${s.slot_name}:</strong> ${s.player_name}
+                            <span style="color: var(--text-secondary); font-size: 0.75rem;">(${s.team} ${s.position} • ${s.multiplier.toFixed(2)}x)</span>
+                        </div>
+                        <div style="display: flex; gap: 0.4rem; align-items: center;">
+                            <span style="color: ${statusColor}; font-weight: 600;">${s.total_projected_points.toFixed(1)} pts</span>
+                            ${lockBadge}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            card.innerHTML = `
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.75rem;">
+                    <div>
+                        <h4 style="margin: 0; font-size: 1rem;">Lineup #${l.lineup_id} • ${contestTier}</h4>
+                        <div style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 0.15rem;">
+                            Banked: <strong>${bankedScore.toFixed(1)}</strong> | Remaining Exp: <strong>${remainingExp.toFixed(1)}</strong>
+                        </div>
+                    </div>
+                    <div style="text-align: right;">
+                        <span class="badge ${statusBadgeClass}">${l.leverage_status}</span>
+                        <div style="font-size: 0.85rem; font-weight: 700; color: var(--accent); margin-top: 0.25rem;">
+                            E[Payout]: $${expPayout.toFixed(2)}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid-3" style="gap: 0.5rem; margin-bottom: 0.75rem; background: var(--surface-muted); padding: 0.6rem; border-radius: 6px; font-size: 0.78rem;">
+                    <div>
+                        <div style="color: var(--text-secondary);">Current Total</div>
+                        <div style="font-weight: 700; font-size: 0.95rem;">${projTotal.toFixed(1)} pts</div>
+                    </div>
+                    <div>
+                        <div style="color: var(--text-secondary);">Payout Prob</div>
+                        <div style="font-weight: 700; font-size: 0.95rem;">${(pCash * 100).toFixed(1)}%</div>
+                    </div>
+                    <div>
+                        <div style="color: var(--text-secondary);">${topTierName} Prob</div>
+                        <div style="font-weight: 700; font-size: 0.95rem; color: #f59e0b;">${(pTop * 100).toFixed(1)}%</div>
+                    </div>
+                </div>
+
+                <div style="margin-bottom: 0.75rem;">
+                    ${slotsHtml}
+                </div>
+
+                <div style="font-size: 0.8rem; color: var(--text-secondary); line-height: 1.35; background: var(--surface); padding: 0.5rem; border-radius: 4px; border: 1px solid var(--border);">
+                    <strong>Opportunity:</strong> ${oppSummary}
+                </div>
+            `;
+            grid.appendChild(card);
+        });
+    }
+
+    function renderLivePlayersTable(players) {
+        const tbody = document.getElementById('live-players-tbody');
+        tbody.innerHTML = '';
+        if (!players || players.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="9" style="text-align: center; color: var(--text-secondary);">No player data available.</td></tr>';
+            return;
+        }
+
+        players.forEach(p => {
+            const tr = document.createElement('tr');
+            let statusBadge = p.game_status === 'FINAL' ? '<span class="badge badge-outline">FINAL</span>' :
+                              p.game_status === 'IN_PROGRESS' ? '<span class="badge badge-warning">IN PROGRESS</span>' :
+                              '<span class="badge badge-success">UPCOMING</span>';
+
+            let lockBadge = p.is_locked ? '<span class="badge badge-danger">LOCKED</span>' : '<span class="badge badge-outline">OPEN</span>';
+
+            let profileBadge = p.profile_type === 'volatile' ? '<span class="badge badge-warning">Volatile</span>' :
+                               p.profile_type === 'reliable' ? '<span class="badge badge-info">Reliable</span>' :
+                               '<span class="badge badge-outline">Standard</span>';
+
+            tr.innerHTML = `
+                <td><strong>${p.player_name}</strong></td>
+                <td>${p.position}</td>
+                <td>${p.team}</td>
+                <td style="font-size: 0.8rem; font-family: monospace;">${p.kickoff_time || 'TBD'}</td>
+                <td>${statusBadge} ${lockBadge}</td>
+                <td class="numeric">${(p.actual_score ?? 0).toFixed(1)}</td>
+                <td class="numeric">${(p.game_status === 'IN_PROGRESS' && p.remaining_is_estimate === false)
+                    ? 'unknown'
+                    : (p.effective_projection ?? p.remaining_projection ?? 0).toFixed(1)}</td>
+                <td>${profileBadge}</td>
+                <td><button class="secondary small" onclick="openLivePlayerModal('${p.athlete_key}')">Edit / Override</button></td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    async function loadLiveScenario(scenarioName) {
+        try {
+            const res = await fetch('/api/live/load_scenario', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ scenario: scenarioName, scenario_name: scenarioName })
+            });
+            const data = await res.json();
+            if (data.status === 'success') {
+                fetchLiveState();
+                fetchAppState();
+            } else {
+                notify(`Failed to load scenario: ${data.message}`, 'error');
+            }
+        } catch (e) {
+            notify(`Error loading scenario: ${e}`, 'error');
+        }
+    }
+
+    async function simulateTimeline(preset) {
+        try {
+            const res = await fetch('/api/live/simulate_timeline', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ preset: preset })
+            });
+            const data = await res.json();
+            if (data.status === 'success') {
+                document.getElementById('live-sim-status').textContent = `Clock set to ${data.simulated_time || 'real-time'}`;
+                fetchLiveState();
+            }
+        } catch (e) {
+            notify(`Simulation error: ${e}`, 'error');
+        }
+    }
+
+    async function recommendCoordinatedSwaps() {
+        try {
+            const res = await fetch('/api/live/recommend_reallocations', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({})
+            });
+            const data = await res.json();
+            if (data.status === 'success') {
+                renderReallocationPlan(data.reallocation_plan);
+            } else {
+                notify(`Reallocation error: ${data.message}`, 'error');
+            }
+        } catch (e) {
+            notify(`Error solving reallocations: ${e}`, 'error');
+        }
+    }
+
+    function renderReallocationPlan(plan) {
+        document.getElementById('reallocation-empty').classList.add('hidden');
+        const resultsEl = document.getElementById('reallocation-results');
+        resultsEl.classList.remove('hidden');
+
+        document.getElementById('realloc-payout-before').textContent = `$${plan.portfolio_payout_before.toFixed(2)}`;
+        document.getElementById('realloc-payout-after').textContent = `$${plan.portfolio_payout_after.toFixed(2)}`;
+        document.getElementById('realloc-payout-delta').textContent = `+$${plan.portfolio_payout_delta.toFixed(2)}`;
+
+        const statusEl = document.getElementById('realloc-optimality-status');
+        if (statusEl) {
+            const statusText = plan.optimality_status || (plan.is_proven_optimal ? 'Proven Optimal' : 'Candidate Pool Filtered');
+            const timeStr = plan.elapsed_seconds ? ` (${plan.elapsed_seconds.toFixed(2)}s)` : '';
+            statusEl.textContent = `${statusText}${timeStr}`;
+            if (plan.is_proven_optimal) {
+                statusEl.style.color = 'var(--accent)';
+            } else if (statusText.includes('Timed Out')) {
+                statusEl.style.color = 'var(--danger)';
+            } else {
+                statusEl.style.color = 'var(--warning, #eab308)';
+            }
+        }
+
+        const tbody = document.getElementById('realloc-swaps-tbody');
+        tbody.innerHTML = '';
+
+        if (!plan.swaps || plan.swaps.length === 0) {
+            let emptyMsg = 'Current allocation is optimal. No beneficial swaps found across eligible cards.';
+            if (plan.optimality_status && plan.optimality_status.includes('Timed Out')) {
+                emptyMsg = 'Solver timed out before finding improvements. Baseline allocation preserved.';
+            } else if (!plan.is_proven_optimal) {
+                emptyMsg = 'No improving swaps found within the evaluated candidate pool (search budget bounded).';
+            }
+            tbody.innerHTML = `<tr><td colspan="9" style="text-align: center; color: var(--text-secondary);">${emptyMsg}</td></tr>`;
+        } else {
+            plan.swaps.forEach(s => {
+                const tr = document.createElement('tr');
+                const oldName = s.old_player_name || s.current_player_name || '<Empty>';
+                const oldCid = s.old_card_id || s.current_card_id || '';
+                const newName = s.new_player_name || s.new_card_name || '';
+                const newCid = s.new_card_id || '';
+                const payDelta = s.payout_delta ?? s.expected_payout_delta ?? 0.0;
+                const contestTier = s.contest_tier || s.contest_name || '';
+
+                tr.innerHTML = `
+                    <td><strong>#${s.lineup_id}</strong> ${contestTier ? '(' + contestTier + ')' : ''}</td>
+                    <td>${s.slot_name}</td>
+                    <td>${oldName} <span style="font-size: 0.75rem; color: var(--text-secondary);">${oldCid}</span></td>
+                    <td style="text-align: center; color: var(--accent);">&rarr;</td>
+                    <td><strong>${newName}</strong> <span style="font-size: 0.75rem; color: var(--text-secondary);">${newCid}</span></td>
+                    <td class="numeric">${s.salary_delta >= 0 ? '+$' : '-$'}${Math.abs(s.salary_delta).toLocaleString()}</td>
+                    <td class="numeric" style="color: ${s.score_delta >= 0 ? 'var(--accent)' : 'var(--danger)'};">${s.score_delta >= 0 ? '+' : ''}${s.score_delta.toFixed(1)}</td>
+                    <td class="numeric" style="color: ${payDelta >= 0 ? 'var(--accent)' : 'var(--danger)'}; font-weight: 600;">${payDelta >= 0 ? '+$' : '-$'}${Math.abs(payDelta).toFixed(2)}</td>
+                    <td style="font-size: 0.8rem;">${s.rationale}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        const stepsList = document.getElementById('realloc-steps-list');
+        stepsList.innerHTML = '';
+        if (plan.execution_steps && plan.execution_steps.length > 0) {
+            plan.execution_steps.forEach(step => {
+                const li = document.createElement('li');
+                li.style.marginBottom = '0.35rem';
+                li.textContent = step;
+                stepsList.appendChild(li);
+            });
+        }
+    }
+
+    async function applyCoordinatedReallocations() {
+        try {
+            const res = await fetch('/api/live/apply_reallocations', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            });
+            const data = await res.json();
+            if (data.status === 'success') {
+                notify(`${data.message} ${data.swaps_applied} swaps applied to local entered lineups.`, 'success');
+                await fetchLiveState();
+                await fetchAppState();
+            } else {
+                notify(`Apply failed: ${data.message}`, 'error');
+            }
+        } catch (e) {
+            notify(`Error applying reallocations: ${e}`, 'error');
+        }
+    }
+
+    function inputValue(value) {
+        return value === null || value === undefined ? '' : String(value);
+    }
+
+    function renderScoreReadout() {
+        const el = document.getElementById('live-modal-readout');
+        if (!el) return;
+        const card = appState.cards.find(c => c.card_id === appState.scoreContext.cardId);
+        if (!card) {
+            el.textContent = 'Pregame projection is unavailable for this card. Enter raw points only.';
+            return;
+        }
+        el.innerHTML = `
+            <div><strong>Pregame raw projection:</strong> ${card.raw_projection.toFixed(2)} pts</div>
+            <div><strong>Adjusted projection (multiplier applied once):</strong> ${card.adjusted_projection.toFixed(2)} pts</div>
+            <div><strong>Card multiplier:</strong> ${multiplierLabel(card.multiplier)} · raw points x mult = lineup points</div>`;
+    }
+
+    function openScoreModal(athleteKey, cardId, lineupId, slotName, forceStatus) {
+        if (appState.busy) { setStatus('Wait for the running request to finish.', 'pending'); return; }
+        const live = appState.livePlayers[athleteKey] || {};
+        appState.scoreContext = { athleteKey, cardId, lineupId, slotName };
+        const card = appState.cards.find(c => c.card_id === cardId);
+        const nameEl = document.getElementById('live-modal-player-name');
+        if (nameEl) nameEl.textContent = card ? `Score and status · ${card.player_name}` : 'Score and status';
+        document.getElementById('live-modal-athlete-key').value = athleteKey;
+        const status = forceStatus || live.game_status || 'UPCOMING';
+        document.getElementById('live-modal-status').value = status;
+        document.getElementById('live-modal-points').value = inputValue(
+            status === 'FINAL' ? (live.final_points ?? live.live_points) : live.live_points
+        );
+        document.getElementById('live-modal-rem-proj').value = (
+            status === 'IN_PROGRESS' && !live.remaining_is_estimate
+        ) ? '' : inputValue(live.remaining_projection);
+        document.getElementById('live-modal-kickoff').value = live.kickoff_time || '';
+        document.getElementById('live-modal-profile').value = live.profile_type || 'standard';
+        const errEl = document.getElementById('live-modal-error');
+        if (errEl) errEl.textContent = '';
+        renderScoreReadout();
+        openModal('live-player-modal');
+    }
+
+    function onScoreStatusChange() {
+        // The seeded pregame projection is not a supplied estimate. Switching to
+        // in-progress must not carry it over as if the user typed it.
+        const athleteKey = document.getElementById('live-modal-athlete-key').value;
+        const live = appState.livePlayers[athleteKey] || {};
+        const status = document.getElementById('live-modal-status').value;
+        const field = document.getElementById('live-modal-rem-proj');
+        if (!field) return;
+        if (status === 'IN_PROGRESS' && !live.remaining_is_estimate) {
+            field.value = '';
+        } else if (status !== 'IN_PROGRESS' && field.value === '' && live.remaining_projection !== undefined) {
+            field.value = inputValue(live.remaining_projection);
+        }
+    }
+
+    function openLivePlayerModal(athleteKey) {
+        const card = appState.cards.find(c => c.athlete_key === athleteKey);
+        openScoreModal(athleteKey, card ? card.card_id : null, null, null);
+    }
+
+    async function saveLivePlayerState() {
+        if (isBusy()) return;
+        const athleteKey = document.getElementById('live-modal-athlete-key').value;
+        const gameStatus = document.getElementById('live-modal-status').value;
+        const pointsRaw = document.getElementById('live-modal-points').value.trim();
+        const remainingRaw = document.getElementById('live-modal-rem-proj').value.trim();
+        const kickoffTime = document.getElementById('live-modal-kickoff').value.trim();
+        const profileType = document.getElementById('live-modal-profile').value;
+        const errEl = document.getElementById('live-modal-error');
+        const payload = {
+            athlete_key: athleteKey,
+            game_status: gameStatus,
+            kickoff_time: kickoffTime,
+            profile_type: profileType
+        };
+
+        const readNumber = (raw, label) => {
+            if (raw === '') return null;
+            const value = Number(raw);
+            if (!Number.isFinite(value)) throw new Error(`${label} must be a number.`);
+            return value;
+        };
+
+        try {
+            const points = readNumber(pointsRaw, 'Actual points');
+            const remaining = readNumber(remainingRaw, 'Remaining estimate');
+            if (gameStatus === 'FINAL' && points === null) {
+                throw new Error('Enter the final raw points before saving a Final status.');
+            }
+            if (points !== null) {
+                payload.actual_score = points;
+                payload.live_points = gameStatus === 'FINAL' ? 0.0 : points;
+                payload.final_points = gameStatus === 'FINAL' ? points : 0.0;
+            }
+            // The flag is sent on every save so a cleared field becomes unknown on the server.
+            payload.remaining_is_estimate = remaining !== null;
+            if (remaining !== null) {
+                payload.remaining_projection = remaining;
+                payload.effective_projection = remaining;
+            }
+            if (errEl) errEl.textContent = '';
+        } catch (error) {
+            if (errEl) errEl.textContent = error.message;
+            return;
+        }
+
+        beginRequest('Saving score');
+        const { ok, data } = await postJson('/api/live/update_player_state', payload);
+        endRequest();
+        if (!ok) {
+            const message = data.message || 'The score update was rejected. Previous values are unchanged.';
+            if (errEl) errEl.textContent = message;
+            notify(message, 'error');
+            return;
+        }
+        closeModal('live-player-modal');
+        markUnsaved();
+        await fetchLiveState();
+        const statusLabel = gameStatus === 'FINAL' ? 'Final' : (gameStatus === 'IN_PROGRESS' ? 'In progress' : 'Upcoming');
+        notify(`${statusLabel} saved. Multiplier applies once to the raw points you entered.`, 'success');
+    }
+
+    async function uploadLiveScoresCSV() {
+        const fileInput = document.getElementById('live-scores-file-input');
+        if (!fileInput.files || fileInput.files.length === 0) return;
+
+        const formData = new FormData();
+        formData.append('scores_file', fileInput.files[0]);
+
+        try {
+            const res = await fetch('/api/live/upload_scores_csv', {
+                method: 'POST',
+                body: formData
+            });
+            const data = await res.json();
+            if (!res.ok || data.status !== 'success') throw new Error(data.message || 'CSV upload failed.');
+            notify(data.message, 'success');
+            await fetchLiveState();
+        } catch (e) {
+            notify(`Live scores CSV: ${e.message}`, 'error');
+        } finally {
+            fileInput.value = '';
+        }
+    }
+
+    // Initialize
+    window.addEventListener('DOMContentLoaded', () => {
+        renderSaveState();
+        loadSlates();
+        fetchAppState();
+        fetchLiveState();
+    });
+</script>
 </body>
 </html>
