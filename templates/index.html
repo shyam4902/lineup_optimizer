@@ -2470,16 +2470,51 @@
                 <td class="numeric">$${card.weekly_salary.toLocaleString()}</td>
                 <td>${assigned ? `<span class="badge badge-success" style="font-size: 0.72rem; padding: 0.12rem 0.4rem; white-space: nowrap;">${escapeHtml(lineupDisplayName(assigned.lineupId))} · ${escapeHtml(assigned.slotName)}</span>` : '<span style="color: var(--text-secondary); font-size: 0.75rem;">Unassigned</span>'}</td>
                 <td><span class="${status.className}" title="${escapeHtml(status.fullText)}">${escapeHtml(status.label)}</span></td>
-                <td></td>`;
+                <td><div class="roster-actions" style="display: inline-flex; gap: 0.25rem; align-items: center;"></div></td>`;
+            const actions = tr.querySelector('.roster-actions');
             const button = document.createElement('button');
             button.className = 'secondary small';
             button.textContent = excluded ? 'Include' : 'Exclude';
             button.disabled = appState.busy;
             button.setAttribute('aria-label', `${excluded ? 'Include' : 'Exclude'} ${card.player_name}`);
             button.onclick = () => excludePlayer(card.athlete_key, !excluded);
-            tr.lastElementChild.appendChild(button);
+            actions.appendChild(button);
+
+            const removeBtn = document.createElement('button');
+            removeBtn.className = assigned ? 'secondary small danger' : 'secondary small';
+            removeBtn.textContent = 'Remove';
+            removeBtn.disabled = appState.busy || !assigned;
+            if (assigned) {
+                removeBtn.title = `Remove from ${lineupDisplayName(assigned.lineupId)} (${assigned.slotName})`;
+                removeBtn.setAttribute('aria-label', `Remove ${card.player_name} from ${lineupDisplayName(assigned.lineupId)} ${assigned.slotName}`);
+                removeBtn.onclick = () => removeCardFromLineup(card, assigned);
+            } else {
+                removeBtn.title = 'Player is not currently in any lineup';
+                removeBtn.setAttribute('aria-label', `${card.player_name} is not currently in any lineup`);
+            }
+            actions.appendChild(removeBtn);
+
             tbody.appendChild(tr);
         });
+    }
+
+    async function removeCardFromLineup(card, assigned) {
+        if (isBusy() || !assigned) return;
+        const lineupLabel = lineupDisplayName(assigned.lineupId);
+        beginRequest(`Removing ${card.player_name}`);
+        const { ok, data } = await postJson('/api/planner/edit_lineup', {
+            lineup_id: assigned.lineupId,
+            action: 'clear',
+            slot_name: assigned.slotName
+        });
+        endRequest();
+        if (!ok) {
+            notify(data.message || `Could not remove ${card.player_name}. The lineup is unchanged.`, 'error');
+            return;
+        }
+        renderPlan(data.plan);
+        markUnsaved();
+        notify(`Removed ${card.player_name} from ${lineupLabel} (${assigned.slotName}).`, 'success');
     }
 
     function focusRosterPanel() {
