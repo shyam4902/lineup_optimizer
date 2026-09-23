@@ -157,7 +157,7 @@ class PlannerAppState:
     def recompute_planner_cards(self) -> None:
         self.salary_source = "roster"
         if not self.roster_cards or not self.snapshot:
-            self.planner_cards = []
+            self.planner_cards = multi_lineup_planner.join_cards_with_projections(self.roster_cards, [])
             return
         self.planner_cards = multi_lineup_planner.join_cards_with_projections(
             self.roster_cards,
@@ -657,7 +657,7 @@ def api_planner_generate():
 
     STATE.recompute_planner_cards()
 
-    if not STATE.planner_cards:
+    if not STATE.planner_cards or STATE.snapshot is None:
         return jsonify({"status": "error", "message": "Roster or weekly projections are missing."}), 400
 
     quality_threshold_raw = data.get("quality_threshold", 0.0)
