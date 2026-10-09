@@ -277,20 +277,157 @@
             gap: 1.25rem;
             align-items: start;
         }
-        .workspace-lineups { display: flex; flex-direction: column; gap: 1.25rem; min-width: 0; }
-        .lineup-entry { margin-bottom: 0; padding: 1rem 1.15rem; }
+        .workspace-lineups { display: flex; flex-direction: column; gap: 0.85rem; min-width: 0; }
+
+        /* Contest Groups & Accordions */
+        .contest-group { display: flex; flex-direction: column; gap: 0.55rem; margin-bottom: 0.35rem; }
+        .contest-group-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 0.45rem 0.75rem;
+            cursor: pointer;
+            user-select: none;
+            transition: background 0.15s ease, border-color 0.15s ease;
+        }
+        .contest-group-header:hover {
+            background: var(--surface-muted);
+            border-color: var(--border-strong);
+        }
+        .contest-group-title {
+            display: flex;
+            align-items: center;
+            gap: 0.55rem;
+            flex-wrap: wrap;
+        }
+        .contest-toggle-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 1.15rem;
+            height: 1.15rem;
+            font-size: 0.68rem;
+            color: var(--text-secondary);
+            transition: transform 0.2s ease;
+        }
+        .contest-toggle-icon.collapsed {
+            transform: rotate(-90deg);
+        }
+        .contest-group-count {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--text);
+        }
+        .contest-group-meta {
+            font-size: 0.76rem;
+            color: var(--text-secondary);
+        }
+        .contest-group-actions {
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+        }
+        .contest-group-body {
+            display: flex;
+            flex-direction: column;
+            gap: 0.55rem;
+        }
+
+        /* Lineup Card Styling & Minimization */
+        .lineup-entry {
+            margin-bottom: 0;
+            padding: 0.65rem 0.85rem;
+            border-radius: 8px;
+            transition: padding 0.15s ease, border-color 0.15s ease;
+        }
+        .lineup-entry.is-collapsed {
+            padding: 0.45rem 0.85rem;
+        }
         .lineup-entry.status-locked { border-left: 3px solid var(--info); }
         .lineup-entry.status-incomplete { border-left: 3px solid var(--warning); }
         .lineup-entry.status-invalid { border-left: 3px solid var(--danger); }
-        .lineup-entry-head { display: flex; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
-        .lineup-entry-title { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.35rem; }
-        .lineup-entry-title h3 { margin: 0; font-size: 1.1rem; }
-        .lineup-metrics { display: flex; flex-wrap: wrap; gap: 0.3rem 1.1rem; font-size: 0.82rem; color: var(--text-secondary); }
+        .lineup-entry-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+            cursor: pointer;
+            user-select: none;
+        }
+        .lineup-entry-title {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            flex-wrap: wrap;
+            margin-bottom: 0.2rem;
+        }
+        .lineup-entry-title h3 {
+            margin: 0;
+            font-size: 0.98rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+        }
+        .lineup-toggle-btn {
+            background: transparent;
+            border: none;
+            padding: 0;
+            margin: 0;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-secondary);
+            font-size: 0.68rem;
+            line-height: 1;
+        }
+        .lineup-toggle-btn:hover {
+            color: var(--text);
+            background: transparent;
+        }
+        .lineup-toggle-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 1.05rem;
+            height: 1.05rem;
+            transition: transform 0.2s ease;
+        }
+        .lineup-toggle-icon.collapsed {
+            transform: rotate(-90deg);
+        }
+        .lineup-metrics {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 0.25rem 0.5rem;
+            font-size: 0.78rem;
+            color: var(--text-secondary);
+            line-height: 1.3;
+        }
         .lineup-metrics strong { color: var(--text); }
-        .lineup-actions { display: flex; flex-wrap: wrap; gap: 0.35rem; align-items: flex-start; }
-        .lineup-slot-table { width: 100%; font-size: 0.8rem; }
-        .lineup-slot-table th { padding: 0.35rem 0.25rem; font-size: 0.69rem; letter-spacing: normal; white-space: nowrap; }
-        .lineup-slot-table td { padding: 0.35rem 0.25rem; vertical-align: middle; }
+        .metric-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.2rem;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            padding: 0.08rem 0.38rem;
+            font-size: 0.75rem;
+        }
+        .metric-sub {
+            color: var(--text-secondary);
+            font-size: 0.7rem;
+        }
+        .lineup-actions { display: flex; flex-wrap: wrap; gap: 0.25rem; align-items: center; }
+        .lineup-slot-table { width: 100%; font-size: 0.78rem; }
+        .lineup-slot-table th { padding: 0.24rem 0.22rem; font-size: 0.68rem; letter-spacing: normal; white-space: nowrap; }
+        .lineup-slot-table td { padding: 0.24rem 0.22rem; vertical-align: middle; }
         .lineup-slot-table .status-cell select {
             width: auto;
             min-height: 1.45rem;
@@ -329,10 +466,29 @@
             padding: 0.85rem;
         }
         .roster-panel .table-wrap {
-            overflow: auto;
+            overflow-x: auto;
+            overflow-y: auto;
             border: 1px solid var(--border);
             border-radius: 6px;
             background: var(--surface);
+            scrollbar-width: thin;
+            scrollbar-color: var(--border-strong) var(--surface-muted);
+            -webkit-overflow-scrolling: touch;
+        }
+        .roster-panel .table-wrap::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        .roster-panel .table-wrap::-webkit-scrollbar-track {
+            background: var(--surface-muted);
+            border-radius: 3px;
+        }
+        .roster-panel .table-wrap::-webkit-scrollbar-thumb {
+            background: var(--border-strong);
+            border-radius: 3px;
+        }
+        .roster-panel .table-wrap::-webkit-scrollbar-thumb:hover {
+            background: var(--text-secondary);
         }
         .roster-filters {
             display: grid;
@@ -366,15 +522,15 @@
         .roster-table {
             width: 100%;
             border-collapse: collapse;
-            font-size: 0.78rem;
+            font-size: 0.76rem;
         }
         .roster-table th {
             position: sticky;
             top: 0;
             z-index: 3;
             background: var(--surface);
-            padding: 0.42rem 0.35rem;
-            font-size: 0.72rem;
+            padding: 0.36rem 0.3rem;
+            font-size: 0.7rem;
             letter-spacing: 0.04em;
             text-transform: uppercase;
             color: var(--text-secondary);
@@ -407,8 +563,8 @@
             color: var(--accent);
         }
         .roster-table td {
-            padding: 0.32rem 0.25rem;
-            font-size: 0.78rem;
+            padding: 0.26rem 0.25rem;
+            font-size: 0.76rem;
             vertical-align: middle;
             border-bottom: 1px solid var(--border);
             white-space: nowrap;
@@ -416,6 +572,44 @@
         .roster-table td.numeric {
             text-align: right;
             font-variant-numeric: tabular-nums;
+        }
+        .roster-player-cell {
+            max-width: 155px;
+            min-width: 105px;
+        }
+        .roster-player-cell .player-name {
+            font-weight: 600;
+            color: #fff;
+            line-height: 1.2;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .roster-player-cell .player-meta {
+            font-size: 0.69rem;
+            color: var(--text-secondary);
+            margin-top: 1px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .roster-actions {
+            display: inline-flex;
+            gap: 0.2rem;
+            align-items: center;
+            justify-content: flex-end;
+        }
+        .roster-actions button {
+            padding: 0.1rem 0.32rem;
+            font-size: 0.66rem;
+            min-height: 1.35rem;
+            height: 1.35rem;
+            border-radius: 4px;
+            white-space: nowrap;
+        }
+        .roster-table .mult-badge {
+            padding: 0.1rem 0.32rem;
+            font-size: 0.7rem;
         }
         .roster-table tr:hover td {
             background: rgba(255, 255, 255, 0.02);
@@ -430,9 +624,10 @@
             color: var(--text-secondary);
         }
         .roster-table td button.secondary.small {
-            padding: 0.12rem 0.38rem;
-            font-size: 0.68rem;
-            min-height: 1.4rem;
+            padding: 0.1rem 0.32rem;
+            font-size: 0.66rem;
+            min-height: 1.35rem;
+            height: 1.35rem;
             border-radius: 4px;
         }
         .status-pill {
@@ -503,6 +698,29 @@
             border-radius: 4px;
             font-size: 0.7rem;
             font-weight: 600;
+            color: var(--text-secondary);
+        }
+        .opp-chip {
+            display: inline-block;
+            padding: 0.1rem 0.35rem;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            font-size: 0.7rem;
+            font-weight: 500;
+            color: var(--text-secondary);
+        }
+        .game-time-cell {
+            white-space: nowrap;
+            line-height: 1.25;
+        }
+        .game-time-val {
+            font-weight: 600;
+            font-size: 0.76rem;
+            color: var(--text-primary);
+        }
+        .game-date-val {
+            font-size: 0.7rem;
             color: var(--text-secondary);
         }
         .mult-badge {
@@ -631,6 +849,7 @@
             <button id="nav-overview" class="pill-btn active" onclick="switchSection('overview')">Workspace</button>
             <button id="nav-live" class="pill-btn" onclick="switchSection('live')">In-week scores</button>
             <button id="nav-data" class="pill-btn" onclick="switchSection('data')">Roster &amp; projections</button>
+            <button id="nav-advisor" class="pill-btn" onclick="switchSection('advisor')">Market Advisor</button>
         </div>
         <div class="pill-group">
             <button id="nav-optimizer" class="pill-btn" onclick="switchSection('optimizer')">Single Lineup Solver</button>
@@ -658,6 +877,22 @@
             <p class="build-note">Your locked players stay in place. You can manually move players after kickoff to match your real entries. Salary, positions, collections and card ownership must still fit.</p>
         </section>
 
+        <!-- New Week Setup Prompt -->
+        <section id="new-week-card" class="card" style="border-left: 4px solid var(--accent); margin-bottom: 1.5rem;">
+            <div class="card-header" style="margin-bottom: 0.5rem;">
+                <div>
+                    <h3 style="font-size: 1.1rem; margin-bottom: 0.25rem;">New week setup</h3>
+                    <p class="muted" style="margin: 0;">Salaries change each week. Reset your workspace to clear previous entries and kickoff locks, and optionally upload an updated roster file.</p>
+                </div>
+                <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+                    <label for="new-week-roster-input" class="button secondary small" style="margin: 0; cursor: pointer; display: inline-flex; align-items: center;">Upload updated roster</label>
+                    <input type="file" id="new-week-roster-input" accept=".csv,text/csv" style="display: none;" onchange="handleNewWeekRosterSelected(event)">
+                    <button class="secondary small" onclick="triggerResetForNewWeek()">Reset for new week</button>
+                </div>
+            </div>
+            <p id="new-week-feedback" class="muted" style="margin: 0;" role="status" aria-live="polite"></p>
+        </section>
+
         <div class="card workspace-toolbar" role="group" aria-label="Lineup actions">
             <div class="toolbar-group">
                 <label for="add-entry-contest">Add entry in</label>
@@ -671,10 +906,17 @@
                 <select id="lineup-contest-filter" aria-label="Filter lineups by contest" onchange="renderLineupsList()"><option value="ALL">All contests</option></select>
             </div>
             <div class="toolbar-group">
+                <button class="secondary small" onclick="collapseAllContests()" title="Collapse all contest sections">Collapse contests</button>
+                <button class="secondary small" onclick="expandAllContests()" title="Expand all contest sections">Expand contests</button>
+                <button class="secondary small" onclick="minimizeAllLineups()" title="Minimize all lineup cards">Minimize all</button>
+                <button class="secondary small" onclick="expandAllLineups()" title="Expand all lineup cards">Expand all</button>
+            </div>
+            <div class="toolbar-group">
                 <span id="save-state-badge" class="badge badge-outline">No saved copy</span>
                 <button class="secondary small" onclick="savePlan()">Save plan</button>
                 <button class="secondary small" onclick="loadPlan()">Load plan</button>
                 <button class="secondary small" onclick="exportPlanCSV()">Export CSV</button>
+                <button class="secondary small" onclick="triggerResetForNewWeek()" title="Archive current entries and clear workspace for new week">Reset for new week</button>
             </div>
             <p id="workspace-status" class="workspace-status" role="status" aria-live="polite">Ready.</p>
         </div>
@@ -741,6 +983,18 @@
                                 <option value="GAME_LOCKED">Game started</option>
                             </select>
                         </div>
+                        <div style="flex: 1;">
+                            <label for="roster-window-filter">Game window</label>
+                            <select id="roster-window-filter" onchange="renderRosterPanel()">
+                                <option value="ALL">All windows</option>
+                                <option value="TNF">Thursday</option>
+                                <option value="SUN_EARLY">Sunday 1 PM</option>
+                                <option value="SUN_LATE">Sunday 4 PM+</option>
+                                <option value="SNF">Sunday night</option>
+                                <option value="MNF">Monday night</option>
+                                <option value="PRIMETIME">All primetime</option>
+                            </select>
+                        </div>
                     </div>
                 </div>
                 <p id="roster-panel-count" class="workspace-status" role="status" aria-live="polite"></p>
@@ -749,13 +1003,12 @@
                         <thead>
                             <tr>
                                 <th class="sortable" data-col="player" onclick="setRosterSort('player')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();setRosterSort('player');}" tabindex="0" role="button" aria-sort="none">Player <span class="sort-icon">↕</span></th>
-                                <th class="sortable" data-col="pos" onclick="setRosterSort('pos')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();setRosterSort('pos');}" tabindex="0" role="button" aria-sort="none">Pos <span class="sort-icon">↕</span></th>
+                                <th class="sortable" data-col="pos" onclick="setRosterSort('pos')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();setRosterSort('pos');}" tabindex="0" role="button" aria-sort="none" style="text-align: center;">Pos <span class="sort-icon">↕</span></th>
                                 <th class="sortable numeric" data-col="mult" onclick="setRosterSort('mult')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();setRosterSort('mult');}" tabindex="0" role="button" aria-sort="none">Mult <span class="sort-icon">↕</span></th>
                                 <th class="sortable numeric" data-col="adj_proj" onclick="setRosterSort('adj_proj')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();setRosterSort('adj_proj');}" tabindex="0" role="button" aria-sort="none">Adj proj <span class="sort-icon">↕</span></th>
                                 <th class="sortable numeric" data-col="salary" onclick="setRosterSort('salary')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();setRosterSort('salary');}" tabindex="0" role="button" aria-sort="none">Salary <span class="sort-icon">↕</span></th>
-                                <th class="sortable" data-col="assignment" onclick="setRosterSort('assignment')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();setRosterSort('assignment');}" tabindex="0" role="button" aria-sort="none">Assignment <span class="sort-icon">↕</span></th>
-                                <th class="sortable" data-col="availability" onclick="setRosterSort('availability')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();setRosterSort('availability');}" tabindex="0" role="button" aria-sort="none" title="Availability status">Status <span class="sort-icon">↕</span></th>
-                                <th>Action</th>
+                                <th class="sortable" data-col="status" onclick="setRosterSort('status')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();setRosterSort('status');}" tabindex="0" role="button" aria-sort="none" title="Lineup assignment or availability status">Status <span class="sort-icon">↕</span></th>
+                                <th style="text-align: right;">Action</th>
                             </tr>
                         </thead>
                         <tbody id="roster-tbody"></tbody>
@@ -986,14 +1239,19 @@
             <section class="card">
                 <div class="card-header">
                     <div>
-                        <h3>Weekly Projections Feed</h3>
-                        <p>Pre-seeded via Daily Fantasy Fuel with automated injury exclusions.</p>
+                        <h3>Weekly projections</h3>
+                        <p>Upload your downloaded CSV to update projections across your lineups and Week Scores.</p>
                     </div>
-                    <span class="badge badge-success">Auto-Seeded</span>
                 </div>
 
                 <div style="margin-bottom: 1.25rem;">
-                    <label for="slate-select">Active Slate</label>
+                    <label for="csv-fallback-input">Upload projections CSV</label>
+                    <input type="file" id="csv-fallback-input" accept=".csv,text/csv" onchange="uploadProjectionsCSV(event)" aria-describedby="projection-upload-help">
+                    <p id="projection-upload-help" style="font-size: 0.82rem; margin-top: 0.5rem;">Choose a Daily Fantasy Fuel export or a raw projections CSV. Uploads apply immediately. Manual overrides, remaining estimates, and entered scores stay in place.</p>
+                </div>
+
+                <div style="margin-bottom: 1.25rem;">
+                    <label for="slate-select">Or refresh from Daily Fantasy Fuel</label>
                     <div style="display: flex; gap: 0.5rem;">
                         <select id="slate-select"></select>
                         <button id="refresh-dff-btn" class="secondary" onclick="refreshDFF()">Refresh</button>
@@ -1013,10 +1271,6 @@
                 <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
                     <button class="secondary small" onclick="checkUpdates()">Check Slate Updates</button>
                     <button class="secondary small" onclick="openOverridesModal()">Manage Overrides</button>
-                    <label class="button secondary small" style="cursor: pointer; margin: 0;">
-                        Custom Projections CSV
-                        <input type="file" id="csv-fallback-input" accept=".csv" style="display: none;" onchange="uploadProjectionsCSV(event)">
-                    </label>
                 </div>
                 <div id="update-check-msg" style="margin-top: 0.6rem; font-size: 0.82rem; color: var(--text-secondary);"></div>
             </section>
@@ -1131,6 +1385,90 @@
             {% endif %}
         </section>
         {% endif %}
+    </div>
+
+    <!-- SECTION 5: MARKET LISTING ADVISOR -->
+    <div id="sec-advisor" class="hidden">
+        <section class="card" aria-labelledby="advisor-heading">
+            <div class="card-header">
+                <div>
+                    <h2 id="advisor-heading">Market Listing Advisor</h2>
+                    <p class="muted" style="margin: 0.25rem 0 0;">Compare tradeable cards in your uploaded roster against live marketplace floors and historical comps. Identify supply droughts to sell cards at a premium.</p>
+                </div>
+                <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+                    <button id="advisor-scan-btn" onclick="scanMarketAdvisor(false)">Scan Roster for Deals</button>
+                    <button class="secondary small" onclick="scanMarketAdvisor(true)">Refresh Live Floors</button>
+                </div>
+            </div>
+
+            <!-- Controls & Quick Toggles -->
+            <div style="display: flex; gap: 1.25rem; align-items: center; flex-wrap: wrap; margin-top: 1rem; padding-top: 0.75rem; border-top: 1px solid var(--border);">
+                <label style="display: inline-flex; align-items: center; gap: 0.4rem; cursor: pointer; user-select: none;">
+                    <input type="checkbox" id="advisor-core-toggle" checked onchange="handleAdvisorFilterChange()"> Core collection only
+                </label>
+                <label style="display: inline-flex; align-items: center; gap: 0.4rem; cursor: pointer; user-select: none;">
+                    <input type="checkbox" id="advisor-surplus-toggle" onchange="handleAdvisorFilterChange()"> Surplus duplicates only (2+ copies)
+                </label>
+                <div style="margin-left: auto; display: flex; align-items: center; gap: 0.5rem;">
+                    <label for="advisor-search-input" class="muted" style="font-size: 0.85rem; margin: 0;">Search:</label>
+                    <input type="text" id="advisor-search-input" placeholder="Player or team..." oninput="handleAdvisorFilterChange()" style="padding: 0.35rem 0.6rem; font-size: 0.875rem; max-width: 200px;">
+                </div>
+            </div>
+
+            <p id="advisor-feedback" class="muted" style="margin: 0.75rem 0 0;" role="status" aria-live="polite">Click 'Scan Roster for Deals' to analyze your tradeable cards against live market prices.</p>
+
+            <!-- Summary KPI Tiles -->
+            <div id="advisor-metrics" class="grid-4" style="margin: 1.25rem 0; display: none;">
+                <div class="metric-tile"><dt>Total Evaluated</dt><dd id="advisor-metric-total">0</dd></div>
+                <div class="metric-tile"><dt>Top Premium Sells</dt><dd id="advisor-metric-premiums" style="color: var(--accent);">0</dd></div>
+                <div class="metric-tile"><dt>Surplus Duplicates</dt><dd id="advisor-metric-surplus" style="color: #3b82f6;">0</dd></div>
+                <div class="metric-tile"><dt>Monopoly Supply</dt><dd id="advisor-metric-monopoly" style="color: #f59e0b;">0</dd></div>
+            </div>
+        </section>
+
+        <!-- Filter Pill Group -->
+        <div id="advisor-filter-bar" class="card" style="margin-bottom: 1rem; padding: 0.75rem 1rem; display: none;">
+            <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+                <span class="muted" style="font-size: 0.85rem; margin-right: 0.5rem;">Show:</span>
+                <button id="adv-filter-all" class="pill-btn small active" onclick="setAdvisorCategoryFilter('all')">All Tradeable</button>
+                <button id="adv-filter-premium" class="pill-btn small" onclick="setAdvisorCategoryFilter('premium')">Premium Sells (Floor &gt;&gt; Fair)</button>
+                <button id="adv-filter-surplus" class="pill-btn small" onclick="setAdvisorCategoryFilter('surplus')">Surplus Duplicates (2+ Owned)</button>
+                <button id="adv-filter-monopoly" class="pill-btn small" onclick="setAdvisorCategoryFilter('monopoly')">Monopoly (0 Active Supply)</button>
+            </div>
+        </div>
+
+        <!-- Results Table -->
+        <section id="advisor-table-card" class="card" style="display: none;">
+            <div class="card-header">
+                <div>
+                    <h3 style="margin: 0;">Market Listing Recommendations</h3>
+                    <p id="advisor-table-count" class="muted" style="margin: 0.25rem 0 0;">Showing 0 recommendations</p>
+                </div>
+            </div>
+            <div class="table-wrap" style="margin-top: 0.75rem;">
+                <table class="roster-table" id="advisor-table">
+                    <thead>
+                        <tr>
+                            <th>Status</th>
+                            <th>Player</th>
+                            <th>Collection</th>
+                            <th class="numeric">Mult</th>
+                            <th class="numeric">Owned</th>
+                            <th class="numeric">Fair Value</th>
+                            <th class="numeric">Live Floor</th>
+                            <th class="numeric">Rec List Price</th>
+                            <th class="numeric">Gain Over Fair</th>
+                        </tr>
+                    </thead>
+                    <tbody id="advisor-table-body">
+                        <!-- Populated by JS -->
+                    </tbody>
+                </table>
+            </div>
+            <p class="muted" style="margin-top: 0.75rem; font-size: 0.8rem;">
+                * Recommended list price undercuts active marketplace competition to sell fast while capturing profit above historical comps. Net gain reflects price after the 5% seller fee.
+            </p>
+        </section>
     </div>
 
     <!-- MODAL 1: CONTEST RULES & HISTORICAL BENCHMARKS -->
@@ -1310,7 +1648,9 @@
         pendingLabel: '',
         unsaved: false,
         savedAt: null,
-        rosterSort: { key: null, dir: 'asc' }
+        rosterSort: { key: 'adj_proj', dir: 'desc' },
+        collapsedContests: new Set(),
+        collapsedLineups: new Set()
     };
 
     function setStatus(message, tone) {
@@ -1376,12 +1716,16 @@
 
     function preserveView(render) {
         const wrap = document.querySelector('.roster-panel .table-wrap');
-        const rosterScroll = wrap ? wrap.scrollTop : 0;
+        const rosterScrollY = wrap ? wrap.scrollTop : 0;
+        const rosterScrollX = wrap ? wrap.scrollLeft : 0;
         const windowY = window.scrollY;
         const active = document.activeElement;
         const activeId = active && active.id ? active.id : null;
         render();
-        if (wrap) wrap.scrollTop = rosterScroll;
+        if (wrap) {
+            wrap.scrollTop = rosterScrollY;
+            wrap.scrollLeft = rosterScrollX;
+        }
         if (windowY) window.scrollTo(0, windowY);
         if (activeId) {
             const el = document.getElementById(activeId);
@@ -1391,7 +1735,7 @@
 
     function switchSection(section) {
         appState.activeSection = section;
-        ['overview', 'live', 'data', 'optimizer'].forEach(s => {
+        ['overview', 'live', 'data', 'optimizer', 'advisor'].forEach(s => {
             const secEl = document.getElementById(`sec-${s}`);
             const navEl = document.getElementById(`nav-${s}`);
             if (secEl) secEl.classList.toggle('hidden', s !== section);
@@ -1399,6 +1743,7 @@
         });
         if (section === 'live') fetchLiveState();
         if (section === 'overview') renderWorkspace();
+        if (section === 'advisor') onAdvisorSectionOpened();
     }
 
     async function loadSlates() {
@@ -1434,13 +1779,8 @@
             });
             const data = await res.json();
             if (data.status === 'success') {
-                document.getElementById('dff-status-box').innerHTML = `
-                    <div><strong>Slate:</strong> ${data.snapshot.slate_id}</div>
-                    <div><strong>Players:</strong> ${data.snapshot.offensive_player_count} offensive | ${data.snapshot.dst_excluded_count} DST excluded | ${data.snapshot.positive_projection_count} projected</div>
-                    <div style="color: var(--text-secondary); font-size: 0.78rem;">Updated: ${data.snapshot.fetched_at.slice(0, 19)} UTC</div>
-                `;
                 document.getElementById('update-check-msg').textContent = data.message;
-                fetchAppState();
+                await fetchAppState();
             } else {
                 notify(`DFF refresh failed: ${data.message}`, 'error');
             }
@@ -1460,7 +1800,7 @@
             const data = await res.json();
             msgDiv.textContent = `Update check: [${data.status}] ${data.message}`;
             if (data.status === 'PROJECTIONS_CHANGED' || data.status === 'NEW_SLATE') {
-                fetchAppState();
+                await fetchAppState();
             }
         } catch (e) {
             msgDiv.textContent = 'Update check error: ' + e;
@@ -1472,17 +1812,26 @@
         if (!file) return;
         const formData = new FormData();
         formData.append('projection_file', file);
+        const message = document.getElementById('update-check-msg');
+        message.textContent = `Uploading ${file.name}...`;
+        evt.target.disabled = true;
         try {
             const res = await fetch('/api/projections/upload', { method: 'POST', body: formData });
             const data = await res.json();
-            if (data.status === 'success') {
+            if (res.ok && data.status === 'success') {
+                message.textContent = `${file.name}: ${data.message}. Week Scores updated. Manual overrides and scores preserved.`;
                 notify(data.message, 'success');
-                fetchAppState();
+                await fetchAppState();
             } else {
+                message.textContent = `Projections upload error: ${data.message}`;
                 notify(`Projections upload error: ${data.message}`, 'error');
             }
         } catch (e) {
+            message.textContent = `Projections upload error: ${e}`;
             notify(`Projections upload error: ${e}`, 'error');
+        } finally {
+            evt.target.disabled = false;
+            evt.target.value = '';
         }
     }
 
@@ -1500,6 +1849,57 @@
             switchSection('overview');
         } catch (e) {
             notify(`Roster upload error: ${e.message}`, 'error');
+        }
+    }
+
+    async function handleNewWeekRosterSelected(evt) {
+        const file = evt.target.files[0];
+        if (!file) return;
+        const confirmed = window.confirm(`Reset workspace for new week and upload ${file.name}? Previous lineups will be archived.`);
+        if (!confirmed) {
+            evt.target.value = '';
+            return;
+        }
+        await executeWeekReset(file);
+        evt.target.value = '';
+    }
+
+    async function triggerResetForNewWeek() {
+        const confirmed = window.confirm('Reset workspace for the new week? This archives current lineups and kickoff locks so you can generate fresh entries.');
+        if (!confirmed) return;
+        await executeWeekReset(null);
+    }
+
+    async function executeWeekReset(file) {
+        if (isBusy()) return;
+        beginRequest('Resetting for new week');
+        const feedbackEl = document.getElementById('new-week-feedback');
+        if (feedbackEl) feedbackEl.textContent = 'Resetting workspace...';
+        try {
+            let res;
+            if (file) {
+                const formData = new FormData();
+                formData.append('roster_file', file);
+                res = await fetch('/api/planner/reset_week', { method: 'POST', body: formData });
+            } else {
+                res = await fetch('/api/planner/reset_week', { method: 'POST' });
+            }
+            const data = await res.json();
+            if (!res.ok || data.status !== 'success') {
+                throw new Error(data.message || 'Week reset failed.');
+            }
+            appState.activePlan = null;
+            appState.unsaved = false;
+            updateSaveStateBadge();
+            if (feedbackEl) feedbackEl.textContent = data.message;
+            notify(data.message, 'success');
+            await fetchAppState();
+            switchSection('overview');
+        } catch (e) {
+            if (feedbackEl) feedbackEl.textContent = `Reset error: ${e.message}`;
+            notify(`Reset error: ${e.message}`, 'error');
+        } finally {
+            endRequest();
         }
     }
 
@@ -1660,6 +2060,60 @@
         return `${Number(multiplier || 1).toFixed(2)}x`;
     }
 
+    function formatGameTime(card) {
+        if (!card) return { time: 'TBD', date: '', opp: '' };
+        const live = appState.livePlayers ? appState.livePlayers[card.athlete_key] : null;
+        const ko = (live && live.kickoff_time) ? live.kickoff_time : (card.kickoff_time || '');
+        const gDate = (live && live.game_date) ? live.game_date : (card.game_date || '');
+        const opp = (live && live.opp) ? live.opp : (card.opp || '');
+
+        let timeStr = '';
+        let dateStr = '';
+
+        if (ko) {
+            try {
+                const dt = new Date(String(ko).replace('Z', '+00:00'));
+                if (!isNaN(dt.getTime())) {
+                    const dayName = dt.toLocaleDateString('en-US', { weekday: 'short' });
+                    const month = dt.getMonth() + 1;
+                    const day = dt.getDate();
+                    const time = dt.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+                    timeStr = `${dayName} ${time}`;
+                    dateStr = `${month}/${day}`;
+                }
+            } catch (e) {
+                // fallback
+            }
+        }
+
+        if (!timeStr && gDate) {
+            try {
+                const parts = String(gDate).split('-');
+                if (parts.length === 3) {
+                    const dt = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+                    const dayName = dt.toLocaleDateString('en-US', { weekday: 'short' });
+                    timeStr = dayName;
+                    dateStr = `${Number(parts[1])}/${Number(parts[2])}`;
+                } else {
+                    timeStr = String(gDate);
+                }
+            } catch (e) {
+                timeStr = String(gDate);
+            }
+        }
+
+        if (!timeStr) {
+            timeStr = 'TBD';
+        }
+
+        let oppStr = opp ? String(opp).trim() : '';
+        if (oppStr && !oppStr.startsWith('@') && !oppStr.startsWith('vs ') && !oppStr.startsWith('vs.')) {
+            oppStr = `vs ${oppStr}`;
+        }
+
+        return { time: timeStr, date: dateStr, opp: oppStr };
+    }
+
     function assignmentMap() {
         const map = {};
         const plan = appState.activePlan;
@@ -1744,6 +2198,66 @@
         select.value = names.includes(previous) ? previous : 'ALL';
     }
 
+    function toggleLineupCollapse(lineupId, event) {
+        if (event) event.stopPropagation();
+        if (appState.collapsedLineups.has(lineupId)) {
+            appState.collapsedLineups.delete(lineupId);
+        } else {
+            appState.collapsedLineups.add(lineupId);
+        }
+        renderLineupsList();
+    }
+
+    function toggleContestCollapse(contestName, event) {
+        if (event) event.stopPropagation();
+        if (appState.collapsedContests.has(contestName)) {
+            appState.collapsedContests.delete(contestName);
+        } else {
+            appState.collapsedContests.add(contestName);
+        }
+        renderLineupsList();
+    }
+
+    function toggleContestLineups(contestName, collapse) {
+        if (!appState.activePlan) return;
+        appState.activePlan.lineups.forEach(l => {
+            if (l.contest_name === contestName) {
+                if (collapse) {
+                    appState.collapsedLineups.add(l.lineup_id);
+                } else {
+                    appState.collapsedLineups.delete(l.lineup_id);
+                }
+            }
+        });
+        renderLineupsList();
+    }
+
+    function collapseAllContests() {
+        if (!appState.activePlan) return;
+        appState.activePlan.lineups.forEach(l => {
+            appState.collapsedContests.add(l.contest_name);
+        });
+        renderLineupsList();
+    }
+
+    function expandAllContests() {
+        appState.collapsedContests.clear();
+        renderLineupsList();
+    }
+
+    function minimizeAllLineups() {
+        if (!appState.activePlan) return;
+        appState.activePlan.lineups.forEach(l => {
+            appState.collapsedLineups.add(l.lineup_id);
+        });
+        renderLineupsList();
+    }
+
+    function expandAllLineups() {
+        appState.collapsedLineups.clear();
+        renderLineupsList();
+    }
+
     function renderLineupsList() {
         const container = document.getElementById('lineups-container');
         if (!container) return;
@@ -1766,14 +2280,64 @@
             container.appendChild(empty);
             return;
         }
-        lineups.forEach(lineup => container.appendChild(buildLineupEntry(lineup)));
+
+        const groups = new Map();
+        lineups.forEach(lineup => {
+            const cName = lineup.contest_name || 'Other';
+            if (!groups.has(cName)) groups.set(cName, []);
+            groups.get(cName).push(lineup);
+        });
+
+        groups.forEach((groupLineups, contestName) => {
+            const groupEl = document.createElement('section');
+            groupEl.className = 'contest-group';
+            groupEl.dataset.contest = contestName;
+
+            const isContestCollapsed = appState.collapsedContests.has(contestName);
+            const cap = getContestCap(contestName);
+
+            let sumProj = 0;
+            groupLineups.forEach(l => {
+                const totals = lineupTotals(l);
+                sumProj += (totals.actual + totals.remaining);
+            });
+            const avgProj = groupLineups.length > 0 ? (sumProj / groupLineups.length) : 0;
+
+            const groupHeader = document.createElement('div');
+            groupHeader.className = 'contest-group-header';
+            groupHeader.innerHTML = `
+                <div class="contest-group-title">
+                    <span class="contest-toggle-icon ${isContestCollapsed ? 'collapsed' : ''}" aria-hidden="true">&#9660;</span>
+                    <span class="badge ${getContestBadgeClass(contestName)}">${escapeHtml(contestName)}</span>
+                    <span class="contest-group-count">${groupLineups.length} ${groupLineups.length === 1 ? 'lineup' : 'lineups'}</span>
+                    <span class="contest-group-meta">Avg <strong>${avgProj.toFixed(1)} pts</strong> · Cap $${cap.toLocaleString()} · Total <strong>${sumProj.toFixed(1)} pts</strong></span>
+                </div>
+                <div class="contest-group-actions" onclick="event.stopPropagation()">
+                    <button class="secondary small" onclick="toggleContestLineups('${escapeHtml(contestName)}', false)" title="Expand all lineups in this contest">Expand all</button>
+                    <button class="secondary small" onclick="toggleContestLineups('${escapeHtml(contestName)}', true)" title="Minimize all lineups in this contest">Minimize all</button>
+                </div>
+            `;
+            groupHeader.onclick = (e) => {
+                if (e.target.closest('button, select, input, a')) return;
+                toggleContestCollapse(contestName);
+            };
+
+            const groupBody = document.createElement('div');
+            groupBody.className = `contest-group-body ${isContestCollapsed ? 'hidden' : ''}`;
+            groupLineups.forEach(lineup => groupBody.appendChild(buildLineupEntry(lineup)));
+
+            groupEl.appendChild(groupHeader);
+            groupEl.appendChild(groupBody);
+            container.appendChild(groupEl);
+        });
     }
 
     function buildLineupEntry(lineup) {
         const incomplete = (lineup.validation_errors || []).some(e => /is empty|below minimum/i.test(e));
         const entry = document.createElement('section');
         entry.id = `lineup-entry-${lineup.lineup_id}`;
-        entry.className = `card lineup-entry ${lineup.is_locked ? 'status-locked' : (lineup.is_valid ? '' : (incomplete ? 'status-incomplete' : 'status-invalid'))}`;
+        const isCollapsed = appState.collapsedLineups.has(lineup.lineup_id);
+        entry.className = `card lineup-entry ${isCollapsed ? 'is-collapsed' : ''} ${lineup.is_locked ? 'status-locked' : (lineup.is_valid ? '' : (incomplete ? 'status-incomplete' : 'status-invalid'))}`;
 
         const cap = getContestCap(lineup.contest_name);
         const capPct = cap ? Math.min(100, Math.round((lineup.total_salary / cap) * 100)) : 0;
@@ -1783,11 +2347,42 @@
         const projectedTotal = totals.actual + totals.remaining;
         const projectedText = totals.remainingComplete ? `${projectedTotal.toFixed(1)} pts` : `${projectedTotal.toFixed(1)} pts + unknown`;
 
+        const windowCounts = { TNF: 0, SUN_EARLY: 0, SUN_LATE: 0, SNF: 0, MNF: 0, OTHER: 0 };
+        lineup.slots.forEach(s => {
+            if (!s.card) return;
+            const live = appState.livePlayers ? appState.livePlayers[s.card.athlete_key] : null;
+            const ko = (live && live.kickoff_time) ? live.kickoff_time : (s.card.kickoff_time || '');
+            let w = 'OTHER';
+            if (ko) {
+                const dt = new Date(String(ko).replace('Z', '+00:00'));
+                const day = dt.getUTCDay();
+                const hr = dt.getUTCHours();
+                if (day === 4 || (day === 5 && hr < 4)) w = 'TNF';
+                else if (day === 1 || (day === 2 && hr < 4)) w = 'MNF';
+                else if (day === 0) {
+                    if (hr < 19) w = 'SUN_EARLY';
+                    else if (hr < 23) w = 'SUN_LATE';
+                    else w = 'SNF';
+                } else if (day === 1 && hr < 5) w = 'SNF';
+            }
+            windowCounts[w] = (windowCounts[w] || 0) + 1;
+        });
+        const windowParts = [];
+        if (windowCounts.TNF) windowParts.push(`${windowCounts.TNF} Thu`);
+        if (windowCounts.SUN_EARLY) windowParts.push(`${windowCounts.SUN_EARLY} Early`);
+        if (windowCounts.SUN_LATE) windowParts.push(`${windowCounts.SUN_LATE} Late`);
+        if (windowCounts.SNF) windowParts.push(`${windowCounts.SNF} SNF`);
+        if (windowCounts.MNF) windowParts.push(`${windowCounts.MNF} MNF`);
+        const windowSummary = windowParts.length ? windowParts.join(' · ') : (windowCounts.OTHER ? `${windowCounts.OTHER} TBD` : 'None');
+
         const head = document.createElement('div');
         head.className = 'lineup-entry-head';
         head.innerHTML = `
             <div style="flex: 1; min-width: 0;">
                 <div class="lineup-entry-title">
+                    <button type="button" class="lineup-toggle-btn" onclick="toggleLineupCollapse('${lineup.lineup_id}', event)" aria-label="${isCollapsed ? 'Expand lineup' : 'Minimize lineup'}" title="${isCollapsed ? 'Expand lineup' : 'Minimize lineup'}">
+                        <span class="lineup-toggle-icon ${isCollapsed ? 'collapsed' : ''}" aria-hidden="true">&#9660;</span>
+                    </button>
                     <h3>${escapeHtml(lineupDisplayName(lineup.lineup_id))}</h3>
                     <span class="badge ${getContestBadgeClass(lineup.contest_name)}">${escapeHtml(lineup.contest_name)}</span>
                     ${lineup.is_locked ? '<span class="badge badge-info">Lineup locked</span>' : ''}
@@ -1796,35 +2391,44 @@
                         : `<span class="badge ${incomplete ? 'badge-warning' : 'badge-danger'}">${incomplete ? 'Incomplete draft' : 'Needs attention'}</span>`}
                 </div>
                 <div class="lineup-metrics">
-                    <span>Salary <strong>$${lineup.total_salary.toLocaleString()}</strong> of $${cap.toLocaleString()} (<strong>${capPct}%</strong>)</span>
-                    <span>Remaining salary <strong>$${lineup.remaining_salary.toLocaleString()}</strong></span>
-                    <span>Projected <strong>${projectedText}</strong></span>
-                    <span>Actual <strong>${totals.actual.toFixed(1)} pts</strong></span>
-                    <span>Remaining projected <strong>${remainingText}</strong></span>
-                    <span>Slots filled <strong>${filled}/${lineup.slots.length}</strong></span>
+                    <span class="metric-pill">Projected <strong>${projectedText}</strong>${totals.actual > 0 ? ` <span class="metric-sub">(${totals.actual.toFixed(1)} act + ${totals.remaining.toFixed(1)} rem)</span>` : ''}</span>
+                    <span class="metric-pill">Salary <strong>$${lineup.total_salary.toLocaleString()}</strong> of $${cap.toLocaleString()} (<strong>${capPct}%</strong>) · Rem <strong>$${lineup.remaining_salary.toLocaleString()}</strong></span>
+                    <span class="metric-pill">Slots <strong>${filled}/${lineup.slots.length}</strong></span>
+                    <span class="metric-pill">Windows <strong>${windowSummary}</strong></span>
                 </div>
-                <div class="salary-bar-container" aria-hidden="true">
-                    <div class="salary-bar-fill" style="width: ${capPct}%; background: ${lineup.remaining_salary < 0 ? 'var(--danger)' : 'var(--accent)'}"></div>
-                </div>
-                ${lineup.validation_errors.length ? `<p class="cell-note" style="color: var(--text-secondary);">${escapeHtml(lineup.validation_errors.join(' '))}</p>` : ''}
-                ${lineup.unused_salary_flag && lineup.unused_salary_note ? `<p class="cell-note">${escapeHtml(lineup.unused_salary_note)}</p>` : ''}
             </div>
-            <div class="lineup-actions" role="group" aria-label="Actions for ${escapeHtml(lineupDisplayName(lineup.lineup_id))}">
-                <button class="secondary small" onclick="rebuildLineup('${lineup.lineup_id}')" ${appState.busy ? 'disabled' : ''}>Rebuild unlocked slots</button>
+            <div class="lineup-actions" role="group" aria-label="Actions for ${escapeHtml(lineupDisplayName(lineup.lineup_id))}" onclick="event.stopPropagation()">
+                <button class="secondary small" onclick="optimizeLineupSlots('${lineup.lineup_id}')" ${appState.busy ? 'disabled' : ''} title="Arrange earliest players into position slots and latest players into Flex">Optimize flex</button>
+                <button class="secondary small" onclick="rebuildLineup('${lineup.lineup_id}')" ${appState.busy ? 'disabled' : ''}>Rebuild unlocked</button>
                 <button class="secondary small" onclick="toggleLineupLock('${lineup.lineup_id}')" ${appState.busy ? 'disabled' : ''}>${lineup.is_locked ? 'Unlock lineup' : 'Lock lineup'}</button>
-                <button class="secondary small danger" onclick="removeLineup('${lineup.lineup_id}')" ${appState.busy ? 'disabled' : ''}>Remove lineup</button>
+                <button class="secondary small danger" onclick="removeLineup('${lineup.lineup_id}')" ${appState.busy ? 'disabled' : ''}>Remove</button>
             </div>`;
+        head.onclick = (e) => {
+            if (e.target.closest('button, select, input, a')) return;
+            toggleLineupCollapse(lineup.lineup_id);
+        };
         entry.appendChild(head);
+
+        const body = document.createElement('div');
+        body.className = `lineup-body ${isCollapsed ? 'hidden' : ''}`;
+        body.innerHTML = `
+            <div class="salary-bar-container" aria-hidden="true" style="margin-top: 0.35rem;">
+                <div class="salary-bar-fill" style="width: ${capPct}%; background: ${lineup.remaining_salary < 0 ? 'var(--danger)' : 'var(--accent)'}"></div>
+            </div>
+            ${lineup.validation_errors.length ? `<p class="cell-note" style="color: var(--text-secondary); margin: 0.35rem 0 0;">${escapeHtml(lineup.validation_errors.join(' '))}</p>` : ''}
+            ${lineup.unused_salary_flag && lineup.unused_salary_note ? `<p class="cell-note" style="margin: 0.35rem 0 0;">${escapeHtml(lineup.unused_salary_note)}</p>` : ''}
+        `;
 
         const wrap = document.createElement('div');
         wrap.className = 'table-wrap';
+        wrap.style.marginTop = '0.45rem';
         const table = document.createElement('table');
         table.className = 'lineup-slot-table';
-        table.innerHTML = `<caption style="text-align: left; color: var(--text-secondary); margin: 0.5rem 0 0.35rem;">All ${lineup.slots.length} player slots. The card multiplier applies once to raw points (pregame raw x mult = adjusted).</caption>
+        table.innerHTML = `
             <thead><tr>
                 <th scope="col">Slot</th><th scope="col">Player</th><th scope="col">Team</th>
                 <th scope="col" class="numeric">Mult</th><th scope="col" class="numeric">Salary</th>
-                <th scope="col" class="numeric">Pregame</th><th scope="col" class="numeric">Adj proj</th>
+                <th scope="col" class="numeric">Raw points</th><th scope="col" class="numeric">Adj points</th>
                 <th scope="col">Status</th><th scope="col" class="numeric">Actual</th><th scope="col" class="numeric">Remaining</th>
                 <th scope="col" style="text-align: right;">Actions</th>
             </tr></thead>`;
@@ -1832,7 +2436,8 @@
         lineup.slots.forEach(slot => tbody.appendChild(buildSlotRow(lineup, slot)));
         table.appendChild(tbody);
         wrap.appendChild(table);
-        entry.appendChild(wrap);
+        body.appendChild(wrap);
+        entry.appendChild(body);
         return entry;
     }
 
@@ -1852,6 +2457,8 @@
 
         const v = slotLiveValues(card);
         const gameLocked = isGameLocked(card.athlete_key);
+        const gt = formatGameTime(card);
+        const schedLabel = gt.time !== 'TBD' ? `${gt.time}${gt.opp ? ` · ${gt.opp}` : ''}` : (gt.opp || '');
         const actualCell = v.status === 'UPCOMING'
             ? '<span style="color: var(--text-secondary);">-</span>'
             : `${v.actualRaw.toFixed(1)} <span style="color: var(--text-secondary);font-size:0.75rem;">x${v.multiplier.toFixed(2)} = ${v.actual.toFixed(1)}</span>`;
@@ -1863,14 +2470,14 @@
             <td>${posPill} ${lockIcon}</td>
             <td>
                 <div style="font-weight: 600; color: #fff;">${escapeHtml(card.player_name)}</div>
-                <div style="font-size: 0.74rem; color: var(--text-secondary);">${escapeHtml(slot.slot_name)} · ${escapeHtml(card.position)}</div>
+                <div style="font-size: 0.74rem; color: var(--text-secondary);">${escapeHtml(slot.slot_name)} · ${escapeHtml(card.position)}${schedLabel ? ` · <span style="color: var(--accent);">${escapeHtml(schedLabel)}</span>` : ''}</div>
             </td>
             <td><span class="team-chip">${escapeHtml(card.team)}</span></td>
             <td class="numeric"><span class="mult-badge">${multiplierLabel(card.multiplier)}</span></td>
             <td class="numeric">$${card.weekly_salary.toLocaleString()}</td>
             <td class="numeric" style="color: var(--text-secondary);">${card.raw_projection.toFixed(1)}</td>
             <td class="numeric" style="color: var(--accent); font-weight: 700;">${card.adjusted_projection.toFixed(2)}</td>
-            <td class="status-cell">${gameLocked ? '<div class="cell-note" style="color: var(--danger);">Game started</div>' : ''}</td>
+            <td class="status-cell">${gameLocked ? '<div class="cell-note" style="color: var(--danger);">Game started</div>' : (schedLabel ? `<div style="font-size: 0.75rem; color: var(--text-secondary);">${escapeHtml(schedLabel)}</div>` : '')}</td>
             <td class="numeric">${actualCell}</td>
             <td class="numeric">${remainingCell}</td>
             <td>
@@ -1939,6 +2546,17 @@
         renderPlan(data.plan);
         markUnsaved();
         notify(`${data.message} Fill its slots with Swap or Move.`, 'success');
+    }
+
+    async function optimizeLineupSlots(lineupId) {
+        if (isBusy()) return;
+        beginRequest(`Optimizing flex slots for ${lineupDisplayName(lineupId)}`);
+        const { ok, data } = await postJson('/api/planner/edit_lineup', { lineup_id: lineupId, action: 'optimize_slots' });
+        endRequest();
+        if (!ok) { notify(data.message || 'Slot optimization rejected.', 'error'); return; }
+        renderPlan(data.plan);
+        markUnsaved();
+        notify(`Optimized slots for late swap in ${lineupDisplayName(lineupId)}. Cards, points, and salary are unchanged.`, 'success');
     }
 
     async function rebuildLineup(lineupId) {
@@ -2183,7 +2801,9 @@
         document.getElementById('swap-feedback').textContent = `${candidates.length} available replacements. All fit the salary and contest rules.`;
         for (const c of candidates) {
             const tr = document.createElement('tr');
-            tr.innerHTML = `<td><strong>${escapeHtml(c.player_name)}</strong><div class="muted">${escapeHtml(c.collection || 'Core')} · ${c.multiplier.toFixed(2)}x</div></td>
+            const gt = formatGameTime(c);
+            const schedStr = gt.time !== 'TBD' ? `${gt.time}${gt.opp ? ` · ${gt.opp}` : ''}` : (gt.opp || '');
+            tr.innerHTML = `<td><strong>${escapeHtml(c.player_name)}</strong><div class="muted">${escapeHtml(c.collection || 'Core')} · ${c.multiplier.toFixed(2)}x${schedStr ? ` · <span style="color: var(--accent);">${escapeHtml(schedStr)}</span>` : ''}</div></td>
                 <td>${escapeHtml(c.position)}</td><td>${escapeHtml(c.team)}</td>
                 <td class="numeric">$${c.weekly_salary.toLocaleString()}</td>
                 <td class="numeric">${c.adjusted_projection.toFixed(2)}</td>
@@ -2333,20 +2953,22 @@
         } else if (appState.rosterSort.dir === defaultDir) {
             appState.rosterSort.dir = defaultDir === 'asc' ? 'desc' : 'asc';
         } else {
-            appState.rosterSort.key = null;
-            appState.rosterSort.dir = 'asc';
+            appState.rosterSort.key = 'adj_proj';
+            appState.rosterSort.dir = 'desc';
         }
         renderRosterPanel();
     }
 
     function updateRosterSortHeaders() {
-        const ths = document.querySelectorAll('.roster-table th.sortable');
+        const ths = document.querySelectorAll('.roster-panel .roster-table th.sortable');
+        const activeKey = (appState.rosterSort && appState.rosterSort.key) || 'adj_proj';
+        const activeDir = (appState.rosterSort && appState.rosterSort.dir) || 'desc';
         ths.forEach(th => {
             const col = th.dataset.col;
             const icon = th.querySelector('.sort-icon');
-            if (appState.rosterSort.key === col) {
+            if (activeKey === col) {
                 th.classList.add('is-sorted');
-                const isAsc = appState.rosterSort.dir === 'asc';
+                const isAsc = activeDir === 'asc';
                 th.setAttribute('aria-sort', isAsc ? 'ascending' : 'descending');
                 if (icon) icon.textContent = isAsc ? '▲' : '▼';
             } else {
@@ -2384,6 +3006,7 @@
         const query = (document.getElementById('roster-search')?.value || '').trim().toLowerCase();
         const position = document.getElementById('roster-pos-filter')?.value || 'ALL';
         const availability = document.getElementById('roster-avail-filter')?.value || 'ALL';
+        const windowFilter = document.getElementById('roster-window-filter')?.value || 'ALL';
         const assignments = assignmentMap();
         const rows = appState.cards.filter(card => {
             const assigned = Boolean(assignments[card.card_id]);
@@ -2397,57 +3020,87 @@
             if (availability === 'EXCLUDED' && !excluded) return false;
             if (availability === 'INELIGIBLE' && card.is_eligible) return false;
             if (availability === 'GAME_LOCKED' && !gameLocked) return false;
+            if (windowFilter !== 'ALL') {
+                const live = appState.livePlayers ? appState.livePlayers[card.athlete_key] : null;
+                const ko = (live && live.kickoff_time) ? live.kickoff_time : (card.kickoff_time || '');
+                let w = 'OTHER';
+                if (ko) {
+                    const dt = new Date(String(ko).replace('Z', '+00:00'));
+                    const day = dt.getUTCDay();
+                    const hr = dt.getUTCHours();
+                    if (day === 4 || (day === 5 && hr < 4)) w = 'TNF';
+                    else if (day === 1 || (day === 2 && hr < 4)) w = 'MNF';
+                    else if (day === 0) {
+                        if (hr < 19) w = 'SUN_EARLY';
+                        else if (hr < 23) w = 'SUN_LATE';
+                        else w = 'SNF';
+                    } else if (day === 1 && hr < 5) w = 'SNF';
+                }
+                if (windowFilter === 'PRIMETIME') {
+                    if (w !== 'TNF' && w !== 'SNF' && w !== 'MNF') return false;
+                } else if (w !== windowFilter) {
+                    return false;
+                }
+            }
             return true;
         });
 
-        if (appState.rosterSort && appState.rosterSort.key) {
-            const key = appState.rosterSort.key;
-            const mult = appState.rosterSort.dir === 'asc' ? 1 : -1;
-            rows.sort((a, b) => {
-                if (key === 'player') {
-                    const valA = (a.player_name || '').toLowerCase();
-                    const valB = (b.player_name || '').toLowerCase();
-                    return valA.localeCompare(valB) * mult;
-                }
-                if (key === 'pos') {
-                    const posA = a.position || '';
-                    const posB = b.position || '';
-                    const cmp = posA.localeCompare(posB);
-                    if (cmp !== 0) return cmp * mult;
-                    return (b.adjusted_projection - a.adjusted_projection);
-                }
-                if (key === 'mult') {
-                    const multA = Number(a.multiplier) || 0;
-                    const multB = Number(b.multiplier) || 0;
-                    return (multA - multB) * mult;
-                }
-                if (key === 'adj_proj') {
-                    const projA = Number(a.adjusted_projection) || 0;
-                    const projB = Number(b.adjusted_projection) || 0;
-                    return (projA - projB) * mult;
-                }
-                if (key === 'salary') {
-                    const salA = Number(a.weekly_salary) || 0;
-                    const salB = Number(b.weekly_salary) || 0;
-                    return (salA - salB) * mult;
-                }
-                if (key === 'assignment') {
-                    const assignA = assignments[a.card_id];
-                    const assignB = assignments[b.card_id];
-                    const strA = assignA ? `${lineupDisplayName(assignA.lineupId)} ${assignA.slotName}` : '';
-                    const strB = assignB ? `${lineupDisplayName(assignB.lineupId)} ${assignB.slotName}` : '';
-                    if (strA && !strB) return -1 * mult;
-                    if (!strA && strB) return 1 * mult;
-                    return strA.localeCompare(strB) * mult;
-                }
-                if (key === 'availability') {
-                    const statA = getAvailabilityStatus(a, assignments[a.card_id]).label;
-                    const statB = getAvailabilityStatus(b, assignments[b.card_id]).label;
-                    return statA.localeCompare(statB) * mult;
-                }
-                return 0;
-            });
-        }
+        const sortKey = (appState.rosterSort && appState.rosterSort.key) || 'adj_proj';
+        const sortDir = (appState.rosterSort && appState.rosterSort.dir) || 'desc';
+        const mult = sortDir === 'asc' ? 1 : -1;
+        rows.sort((a, b) => {
+            if (sortKey === 'player') {
+                const valA = (a.player_name || '').toLowerCase();
+                const valB = (b.player_name || '').toLowerCase();
+                return valA.localeCompare(valB) * mult;
+            }
+            if (sortKey === 'pos') {
+                const posA = a.position || '';
+                const posB = b.position || '';
+                const cmp = posA.localeCompare(posB);
+                if (cmp !== 0) return cmp * mult;
+                return (b.adjusted_projection - a.adjusted_projection);
+            }
+            if (sortKey === 'mult') {
+                const multA = Number(a.multiplier) || 0;
+                const multB = Number(b.multiplier) || 0;
+                const diff = (multA - multB) * mult;
+                if (diff !== 0) return diff;
+                return (b.adjusted_projection - a.adjusted_projection);
+            }
+            if (sortKey === 'adj_proj') {
+                const projA = Number(a.adjusted_projection) || 0;
+                const projB = Number(b.adjusted_projection) || 0;
+                const diff = (projA - projB) * mult;
+                if (diff !== 0) return diff;
+                const multA = Number(a.multiplier) || 0;
+                const multB = Number(b.multiplier) || 0;
+                if (multB !== multA) return multB - multA;
+                const salA = Number(a.weekly_salary) || 0;
+                const salB = Number(b.weekly_salary) || 0;
+                if (salB !== salA) return salB - salA;
+                return (a.player_name || '').localeCompare(b.player_name || '');
+            }
+            if (sortKey === 'salary') {
+                const salA = Number(a.weekly_salary) || 0;
+                const salB = Number(b.weekly_salary) || 0;
+                const diff = (salA - salB) * mult;
+                if (diff !== 0) return diff;
+                return (b.adjusted_projection - a.adjusted_projection);
+            }
+            if (sortKey === 'status' || sortKey === 'assignment' || sortKey === 'availability') {
+                const assignA = assignments[a.card_id];
+                const assignB = assignments[b.card_id];
+                const strA = assignA ? `${lineupDisplayName(assignA.lineupId)} ${assignA.slotName}` : getAvailabilityStatus(a, null).label;
+                const strB = assignB ? `${lineupDisplayName(assignB.lineupId)} ${assignB.slotName}` : getAvailabilityStatus(b, null).label;
+                if (assignA && !assignB) return -1 * mult;
+                if (!assignA && assignB) return 1 * mult;
+                const cmp = strA.localeCompare(strB);
+                if (cmp !== 0) return cmp * mult;
+                return (b.adjusted_projection - a.adjusted_projection);
+            }
+            return 0;
+        });
 
         const countEl = document.getElementById('roster-panel-count');
         if (countEl) countEl.textContent = `Showing ${rows.length} of ${appState.cards.length} owned copies.`;
@@ -2456,21 +3109,38 @@
         rows.forEach(card => {
             const assigned = assignments[card.card_id];
             const excluded = appState.excludedPlayers.includes(card.athlete_key);
+            const gameLocked = isGameLocked(card.athlete_key);
             const status = getAvailabilityStatus(card, assigned);
+            const gt = formatGameTime(card);
+            const schedStr = gt.time !== 'TBD' ? `${gt.time}${gt.opp ? ` · ${gt.opp}` : ''}` : (gt.opp || '');
             const tr = document.createElement('tr');
             tr.className = `roster-row${assigned ? ' is-assigned' : ''}${card.is_eligible ? '' : ' is-unavailable'}${excluded ? ' is-excluded' : ''}`;
+            const subTitle = `${card.player_name} — ${card.team} · ${card.collection || 'Core'}${schedStr ? ` · ${schedStr}` : ''}`;
+
+            let statusHtml = '';
+            if (assigned) {
+                statusHtml = `<span class="badge badge-success" style="font-size: 0.7rem; padding: 0.1rem 0.35rem; white-space: nowrap;" title="Assigned to ${escapeHtml(lineupDisplayName(assigned.lineupId))} (${escapeHtml(assigned.slotName)})">${escapeHtml(lineupDisplayName(assigned.lineupId))} · ${escapeHtml(assigned.slotName)}</span>${gameLocked ? ' <span class="status-pill status-locked" title="Game started">🔒</span>' : ''}`;
+            } else {
+                statusHtml = `<span class="${status.className}" title="${escapeHtml(status.fullText)}">${escapeHtml(status.label)}</span>`;
+            }
+
             tr.innerHTML = `
                 <td>
-                    <div style="font-weight: 600; color: #fff; line-height: 1.2;">${escapeHtml(card.player_name)}</div>
-                    <div style="font-size: 0.7rem; color: var(--text-secondary); margin-top: 1px;">${escapeHtml(card.team)} · ${escapeHtml(card.collection || 'Core')}</div>
+                    <div class="roster-player-cell" title="${escapeHtml(subTitle)}">
+                        <div class="player-name">${escapeHtml(card.player_name)}</div>
+                        <div class="player-meta">${escapeHtml(card.team)} · ${escapeHtml(card.collection || 'Core')}${schedStr ? ` · <span style="color: var(--accent);">${escapeHtml(schedStr)}</span>` : ''}</div>
+                    </div>
                 </td>
-                <td><span style="font-weight: 500;">${escapeHtml(card.position)}</span></td>
+                <td style="text-align: center;"><span style="font-weight: 500;">${escapeHtml(card.position)}</span></td>
                 <td class="numeric"><span class="mult-badge">${multiplierLabel(card.multiplier)}</span></td>
-                <td class="numeric" style="font-weight: 600; color: var(--accent);">${card.adjusted_projection.toFixed(2)}</td>
+                <td class="numeric">
+                    <div style="font-weight: 600; color: var(--accent); line-height: 1.2;">${card.adjusted_projection.toFixed(2)}</div>
+                    ${card.raw_projection ? `<div style="font-size: 0.67rem; color: var(--text-secondary); line-height: 1; margin-top: 1px;" title="Base projection: ${card.raw_projection.toFixed(2)}">${card.raw_projection.toFixed(1)} base</div>` : ''}
+                </td>
                 <td class="numeric">$${card.weekly_salary.toLocaleString()}</td>
-                <td>${assigned ? `<span class="badge badge-success" style="font-size: 0.72rem; padding: 0.12rem 0.4rem; white-space: nowrap;">${escapeHtml(lineupDisplayName(assigned.lineupId))} · ${escapeHtml(assigned.slotName)}</span>` : '<span style="color: var(--text-secondary); font-size: 0.75rem;">Unassigned</span>'}</td>
-                <td><span class="${status.className}" title="${escapeHtml(status.fullText)}">${escapeHtml(status.label)}</span></td>
-                <td><div class="roster-actions" style="display: inline-flex; gap: 0.25rem; align-items: center;"></div></td>`;
+                <td>${statusHtml}</td>
+                <td style="text-align: right;"><div class="roster-actions"></div></td>`;
+
             const actions = tr.querySelector('.roster-actions');
             const button = document.createElement('button');
             button.className = 'secondary small';
@@ -2480,19 +3150,16 @@
             button.onclick = () => excludePlayer(card.athlete_key, !excluded);
             actions.appendChild(button);
 
-            const removeBtn = document.createElement('button');
-            removeBtn.className = assigned ? 'secondary small danger' : 'secondary small';
-            removeBtn.textContent = 'Remove';
-            removeBtn.disabled = appState.busy || !assigned;
             if (assigned) {
+                const removeBtn = document.createElement('button');
+                removeBtn.className = 'secondary small danger';
+                removeBtn.textContent = 'Remove';
+                removeBtn.disabled = appState.busy;
                 removeBtn.title = `Remove from ${lineupDisplayName(assigned.lineupId)} (${assigned.slotName})`;
                 removeBtn.setAttribute('aria-label', `Remove ${card.player_name} from ${lineupDisplayName(assigned.lineupId)} ${assigned.slotName}`);
                 removeBtn.onclick = () => removeCardFromLineup(card, assigned);
-            } else {
-                removeBtn.title = 'Player is not currently in any lineup';
-                removeBtn.setAttribute('aria-label', `${card.player_name} is not currently in any lineup`);
+                actions.appendChild(removeBtn);
             }
-            actions.appendChild(removeBtn);
 
             tbody.appendChild(tr);
         });
@@ -2582,6 +3249,10 @@
             const res = await fetch('/api/planner/state');
             const data = await res.json();
             if (data.status !== 'success') return;
+            const snapshot = data.snapshot;
+            document.getElementById('dff-status-box').textContent = snapshot
+                ? `Slate: ${snapshot.slate_id} | Players: ${snapshot.offensive_player_count} offensive | Source: ${snapshot.source} | Updated: ${snapshot.fetched_at.slice(0, 19)} UTC`
+                : 'No projections snapshot loaded yet.';
             const onboarding = document.getElementById('roster-onboarding');
             if (onboarding) onboarding.classList.toggle('hidden', data.roster_count > 0);
             const generateBtn = document.getElementById('generate-plan-btn');
@@ -2594,8 +3265,9 @@
             appState.excludedPlayers = data.excluded_athlete_keys || [];
             if (data.cards) appState.cards = data.cards;
             if (data.overrides) appState.overrides = data.overrides;
-            if (data.active_plan) appState.activePlan = data.active_plan;
+            appState.activePlan = data.active_plan || null;
             renderWorkspace();
+            await fetchLiveState();
         } catch (e) {
             console.error('State sync error', e);
             notify('Could not load planner state. Retry with Refresh.', 'error');
@@ -3108,6 +3780,197 @@
         } finally {
             fileInput.value = '';
         }
+    }
+
+    // =========================================================================
+    // Market Listing Advisor
+    // =========================================================================
+
+    const advisorState = {
+        data: null,
+        loading: false,
+        categoryFilter: 'all',
+    };
+
+    function onAdvisorSectionOpened() {
+        if (!advisorState.data && !advisorState.loading) {
+            scanMarketAdvisor(false);
+        }
+    }
+
+    async function scanMarketAdvisor(forceRefresh = false) {
+        if (advisorState.loading) return;
+        advisorState.loading = true;
+
+        const scanBtn = document.getElementById('advisor-scan-btn');
+        const feedback = document.getElementById('advisor-feedback');
+        if (scanBtn) scanBtn.disabled = true;
+        if (feedback) {
+            feedback.textContent = forceRefresh
+                ? 'Refreshing live market floors from GameBlazers...'
+                : 'Evaluating uploaded roster against live market floors...';
+        }
+
+        const coreOnly = document.getElementById('advisor-core-toggle')?.checked ?? true;
+        const url = `/api/market/advisor?core_only=${coreOnly}&force_refresh=${forceRefresh}`;
+
+        try {
+            const res = await fetch(url);
+            const data = await res.json();
+
+            if (!res.ok || data.status !== 'success') {
+                throw new Error(data.message || 'Market evaluation failed.');
+            }
+
+            advisorState.data = data;
+            if (feedback) {
+                feedback.textContent = `Completed evaluation of ${data.summary.unique_cards_evaluated} unique cards. Found ${data.summary.premium_opportunities} premium sell opportunities (${data.summary.surplus_opportunities} surplus duplicates).`;
+            }
+
+            const metricsEl = document.getElementById('advisor-metrics');
+            const filterBarEl = document.getElementById('advisor-filter-bar');
+            const tableCardEl = document.getElementById('advisor-table-card');
+
+            if (metricsEl) metricsEl.style.display = 'grid';
+            if (filterBarEl) filterBarEl.style.display = 'block';
+            if (tableCardEl) tableCardEl.style.display = 'block';
+
+            const mTotal = document.getElementById('advisor-metric-total');
+            const mPrem = document.getElementById('advisor-metric-premiums');
+            const mSurp = document.getElementById('advisor-metric-surplus');
+            const mMono = document.getElementById('advisor-metric-monopoly');
+
+            if (mTotal) mTotal.textContent = data.summary.unique_cards_evaluated;
+            if (mPrem) mPrem.textContent = data.summary.premium_opportunities;
+            if (mSurp) mSurp.textContent = data.summary.surplus_opportunities;
+            if (mMono) mMono.textContent = data.summary.monopoly_opportunities;
+
+            if (data.summary.premium_opportunities > 0) {
+                advisorState.categoryFilter = 'premium';
+                updateAdvisorPillButtons('premium');
+            } else {
+                advisorState.categoryFilter = 'all';
+                updateAdvisorPillButtons('all');
+            }
+
+            renderAdvisorTable();
+        } catch (e) {
+            if (feedback) feedback.textContent = `Error: ${e.message}`;
+            notify(`Market Advisor: ${e.message}`, 'error');
+        } finally {
+            advisorState.loading = false;
+            if (scanBtn) scanBtn.disabled = false;
+        }
+    }
+
+    function setAdvisorCategoryFilter(cat) {
+        advisorState.categoryFilter = cat;
+        updateAdvisorPillButtons(cat);
+        renderAdvisorTable();
+    }
+
+    function updateAdvisorPillButtons(cat) {
+        ['all', 'premium', 'surplus', 'monopoly'].forEach(c => {
+            const el = document.getElementById(`adv-filter-${c}`);
+            if (el) el.classList.toggle('active', c === cat);
+        });
+    }
+
+    function handleAdvisorFilterChange() {
+        renderAdvisorTable();
+    }
+
+    function renderAdvisorTable() {
+        if (!advisorState.data || !advisorState.data.items) return;
+
+        const tbody = document.getElementById('advisor-table-body');
+        const countLabel = document.getElementById('advisor-table-count');
+        if (!tbody || !countLabel) return;
+
+        const searchVal = (document.getElementById('advisor-search-input')?.value || '').trim().toLowerCase();
+        const surplusOnly = document.getElementById('advisor-surplus-toggle')?.checked ?? false;
+        const coreOnly = document.getElementById('advisor-core-toggle')?.checked ?? true;
+
+        let items = advisorState.data.items;
+
+        if (coreOnly) {
+            items = items.filter(x => (x.collection || '').toLowerCase().includes('core'));
+        }
+
+        if (surplusOnly) {
+            items = items.filter(x => x.is_surplus);
+        }
+
+        if (advisorState.categoryFilter === 'premium') {
+            items = items.filter(x => x.status === 'PREMIUM_SELL');
+        } else if (advisorState.categoryFilter === 'surplus') {
+            items = items.filter(x => x.is_surplus);
+        } else if (advisorState.categoryFilter === 'monopoly') {
+            items = items.filter(x => x.status === 'MONOPOLY');
+        }
+
+        if (searchVal) {
+            items = items.filter(x =>
+                (x.player || '').toLowerCase().includes(searchVal) ||
+                (x.team || '').toLowerCase().includes(searchVal) ||
+                (x.pos || '').toLowerCase().includes(searchVal)
+            );
+        }
+
+        countLabel.textContent = `Showing ${items.length} card recommendations`;
+
+        if (items.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="9" style="text-align:center; padding: 2rem;" class="muted">No cards match the selected filters.</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = items.map(item => {
+            let statusBadge = '<span class="badge badge-outline">Hold</span>';
+            if (item.status === 'PREMIUM_SELL') {
+                statusBadge = '<span class="badge badge-success">Premium Sell</span>';
+            } else if (item.status === 'MONOPOLY') {
+                statusBadge = '<span class="badge" style="background: rgba(245, 158, 11, 0.16); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.35);">0 Supply</span>';
+            } else if (item.status === 'MODEST_PREMIUM') {
+                statusBadge = '<span class="badge badge-info">Modest Gain</span>';
+            } else if (item.status === 'UNDERSOLD') {
+                statusBadge = '<span class="badge badge-danger">Undersold</span>';
+            }
+
+            const ownedDisplay = item.is_surplus
+                ? `<strong>${item.copies_owned}</strong> <span class="badge badge-info" style="font-size:0.7rem; padding: 0.1rem 0.35rem; margin-left: 0.25rem;">Surplus</span>`
+                : `${item.copies_owned}`;
+
+            const fairDisplay = item.fair_value !== null ? `$${item.fair_value.toFixed(2)}` : '<span class="muted">-</span>';
+            const floorDisplay = item.floor_price !== null
+                ? `$${item.floor_price.toFixed(2)}`
+                : (item.status === 'MONOPOLY' ? '<span class="muted">None listed</span>' : '<span class="muted">-</span>');
+
+            const recDisplay = item.recommended_price !== null
+                ? `<strong style="color: var(--accent);">$${item.recommended_price.toFixed(2)}</strong>`
+                : '<span class="muted">-</span>';
+
+            let gainDisplay = '<span class="muted">-</span>';
+            if (item.premium_dollars > 0) {
+                const color = item.status === 'PREMIUM_SELL' ? 'var(--accent)' : 'var(--text-secondary)';
+                gainDisplay = `<span style="color: ${color}; font-weight: 600;">+$${item.premium_dollars.toFixed(2)}</span>`;
+            }
+
+            const collShort = (item.collection || '').replace(' Core', '').replace('Primetime-', 'PT-');
+
+            return `
+                <tr>
+                    <td>${statusBadge}</td>
+                    <td><strong>${escapeHtml(item.player)}</strong> <span class="muted" style="font-size:0.8rem;">${escapeHtml(item.team)} ${escapeHtml(item.pos)}</span></td>
+                    <td><span class="muted" style="font-size:0.85rem;">${escapeHtml(collShort)}</span></td>
+                    <td class="numeric">${item.multiplier ? item.multiplier.toFixed(1) + 'x' : '1.0x'}</td>
+                    <td class="numeric">${ownedDisplay}</td>
+                    <td class="numeric">${fairDisplay}</td>
+                    <td class="numeric">${floorDisplay}</td>
+                    <td class="numeric">${recDisplay}</td>
+                    <td class="numeric">${gainDisplay}</td>
+                </tr>
+            `;
+        }).join('');
     }
 
     // Initialize
