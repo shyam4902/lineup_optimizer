@@ -1,5 +1,7 @@
 """Integration tests for Weekly Lineup Planner Flask REST APIs with isolated storage."""
 
+import csv
+import io
 import json
 import tempfile
 import unittest
@@ -8,6 +10,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 import app as app_module
+import multi_lineup_planner
 from app import PlannerAppState, app
 from dff_client import DFFPlayerProjection, ProjectionsSnapshot
 from multi_lineup_planner import LineupSlotAssignment, OwnedCard, PlannerLineup, WeeklyPlan
@@ -72,6 +75,79 @@ class PlannerApiTests(unittest.TestCase):
     def tearDown(self):
         app_module.STATE = self.orig_state
         self.tmp_dir.cleanup()
+
+    def test_projection_upload_updates_week_scores_and_saved_plan_without_losing_edits(self):
+        from dataclasses import asdict, replace
+
+        state = self.test_state
+        state.roster_cards[0] = replace(state.roster_cards[0], multiplier=1.5)
+        state.recompute_planner_cards()
+        self.client.post("/api/planner/generate", json={"contest_distribution": {"Scorcher": 1}})
+        lineup = state.active_plan.lineups[0]
+        lineup.is_locked = True
+        lineup.slots[0].is_locked = True
+        placements = [(s.card.card.card_id, s.is_locked) for s in lineup.slots]
+        for key, edits in {
+            "joshallen": {"game_status": "IN_PROGRESS", "live_points": 12, "remaining_projection": 5},
+            "lamarjackson": {"game_status": "FINAL", "final_points": 24},
+            "jalenhurts": {"remaining_projection": 17},
+            "derrickhenry": {"game_status": "IN_PROGRESS", "live_points": 9},
+        }.items():
+            self.assertEqual(self.client.post("/api/live/update_player_state", json={"athlete_key": key, **edits}).status_code, 200)
+        protected = {key: asdict(state.live_states[key]) for key in
+                     ("joshallen", "lamarjackson", "jalenhurts", "derrickhenry")}
+        state.overrides["breecehall"] = 33
+        state.excluded_athlete_keys.add("bijanrobinson")
+        state.recompute_planner_cards()
+        self.assertEqual(self.client.post("/api/planner/save").status_code, 200)
+        saved_bytes = (state.plans_dir / "latest_plan.json").read_bytes()
+        csv_file = io.StringIO()
+        writer = csv.writer(csv_file)
+        writer.writerow(["Player", "Team", "Position", "Projection"])
+        writer.writerows((c.player_name, c.team, c.position, 30) for c in self.test_cards)
+        response = self.client.post("/api/projections/upload", data={
+            "projection_file": (io.BytesIO(csv_file.getvalue().encode()), "updated.csv")})
+        self.assertEqual(response.status_code, 200, response.get_json())
+        self.assertEqual((state.plans_dir / "latest_plan.json").read_bytes(), saved_bytes)
+
+        # Loading a plan saved before the upload must still use today's projections.
+        for reload_plan in (False, True):
+            with self.subTest(reload_plan=reload_plan):
+                if reload_plan:
+                    self.assertEqual(self.client.post("/api/planner/load").status_code, 200)
+                live = self.client.get("/api/live/state").get_json()
+                self.assertEqual(live["player_states"]["patrickmahomes"]["remaining_projection"], 30)
+                self.assertEqual(live["player_states"]["patrickmahomes"]["remaining_stdev"], 10.5)
+                self.assertEqual(live["player_states"]["breecehall"]["remaining_projection"], 33)
+                for key, expected in protected.items():
+                    self.assertEqual(asdict(state.live_states[key]), expected)
+                self.assertEqual(state.live_states["patrickmahomes"].effective_mean(1.5), 45)
+                self.assertTrue(state.active_plan.lineups[0].is_locked)
+                self.assertEqual([(s.card.card.card_id, s.is_locked) for s in state.active_plan.lineups[0].slots], placements)
+                self.assertEqual(state.excluded_athlete_keys, {"bijanrobinson"})
+                for view in live["lineups"]:
+                    self.assertAlmostEqual(view["projected_total"], sum(s["total_projected_points"] for s in view["slots"]), places=2)
+
+    def test_projection_upload_refreshes_live_projection_used_by_week_scores(self):
+        self.client.post("/api/planner/generate", json={"contest_distribution": {"Scorcher": 1}})
+        csv_text = "Player,Team,Position,Projection\n" + "\n".join(
+            f"{card.player_name},{card.team},{card.position},30" for card in self.test_cards
+        )
+
+        response = self.client.post("/api/projections/upload", data={
+            "projection_file": (io.BytesIO(csv_text.encode()), "week-3.csv"),
+        })
+
+        self.assertEqual(response.status_code, 200, response.get_json())
+        self.assertTrue(all(card.raw_projection == 30 for card in self.test_state.planner_cards))
+        self.assertTrue(all(player.remaining_projection == 30 for player in self.test_state.live_states.values()))
+        live = self.client.get("/api/live/state").get_json()
+        for lineup in live["lineups"]:
+            self.assertAlmostEqual(
+                lineup["projected_total"],
+                sum(slot["total_projected_points"] for slot in lineup["slots"]),
+                places=2,
+            )
 
     def test_all_selected_entries_without_quality_gate(self):
         from dataclasses import replace
@@ -387,6 +463,39 @@ class PlannerApiTests(unittest.TestCase):
         self.assertEqual(restored.kickoff_time, "2026-09-13T17:00:00+00:00")
         self.assertEqual(self.test_state.dashboard_schedule["week"], 1)
 
+    def test_reset_keeps_saved_plan_loadable_with_locks_and_live_scores(self):
+        self.assertEqual(self.client.post("/api/planner/generate", json={
+            "target_count": 1, "contest_distribution": {"Scorcher": 1},
+        }).status_code, 200)
+        lineup = self.test_state.active_plan.lineups[0]
+        slot = lineup.slots[0]
+        response = self.client.post("/api/planner/toggle_lock", json={
+            "lineup_id": lineup.lineup_id, "slot_name": slot.slot_name,
+        })
+        self.assertEqual(response.status_code, 200, response.get_json())
+        player = self.test_state.live_states[slot.card.card.athlete_key]
+        player.game_status = "IN_PROGRESS"
+        player.live_points = 12.5
+
+        self.assertEqual(self.client.post("/api/planner/save").status_code, 200)
+        saved_path = self.test_state.plans_dir / "latest_plan.json"
+        saved_bytes = saved_path.read_bytes()
+
+        reset = self.client.post("/api/planner/reset_week")
+        self.assertEqual(reset.status_code, 200, reset.get_json())
+        self.assertIsNone(self.test_state.active_plan)
+        self.assertEqual(saved_path.read_bytes(), saved_bytes)
+
+        loaded = self.client.post("/api/planner/load")
+        self.assertEqual(loaded.status_code, 200, loaded.get_json())
+        restored_lineup = self.test_state.active_plan.lineups[0]
+        restored_slot = next(s for s in restored_lineup.slots if s.slot_name == slot.slot_name)
+        self.assertTrue(restored_slot.is_locked)
+        restored_player = self.test_state.live_states[slot.card.card.athlete_key]
+        self.assertEqual(restored_player.game_status, "IN_PROGRESS")
+        self.assertEqual(restored_player.live_points, 12.5)
+        self.assertEqual(saved_path.read_bytes(), saved_bytes)
+
     def test_friend_roster_persists_without_loading_another_workspace(self):
         import io
         roster = b"player_name,team,position,multiplier,salary,status\nPatrick Mahomes,KC,QB,1,7500,Active\n"
@@ -635,6 +744,71 @@ class V1Packet1RegressionTests(unittest.TestCase):
         self.assertEqual(result.status_code, 200, result.get_json())
         rebuilt_te = next(s for s in lineup.slots if s.slot_kind == "TE")
         self.assertEqual(rebuilt_te.card.card.card_id, te_card_id)
+
+    def test_rebuild_after_csv_omits_started_players_preserves_scores_and_eligibility(self):
+        self.client.post("/api/planner/generate", json={"contest_distribution": {"Scorcher": 1}})
+        lineup = self.test_state.active_plan.lineups[0]
+        slot = next(s for s in lineup.slots if s.card.card.card_id == "qb1")
+        slot.is_locked = True
+        key = slot.card.card.athlete_key
+        response = self.client.post("/api/live/update_player_state", json={
+            "athlete_key": key, "game_status": "FINAL", "final_points": -2.0})
+        self.assertEqual(response.status_code, 200, response.get_json())
+        used = {s.card.card.card_id for s in lineup.slots}
+        unused = next(c for c in self.test_cards if c.card_id not in used)
+        self.client.post("/api/live/update_player_state", json={
+            "athlete_key": unused.athlete_key, "game_status": "FINAL", "final_points": 100})
+        csv_text = "player_name,team,position,salary,ppg_projection\n" + "\n".join(
+            f"{p.player_name},{p.team},{p.position},{p.salary},25"
+            for p in self.test_players if p.athlete_key not in {key, unused.athlete_key})
+        csv_text += "\nReserve One,KC,WR,5000,10\nReserve Two,BUF,RB,5000,10\n"
+        response = self.client.post("/api/projections/upload", data={
+            "projection_file": (io.BytesIO(csv_text.encode()), "remaining-games.csv")})
+        self.assertEqual(response.status_code, 200, response.get_json())
+        scores = {k: v.to_dict() for k, v in self.test_state.live_states.items()}
+        self.client.post("/api/planner/save")
+        saved = (self.test_state.plans_dir / "latest_plan.json").read_bytes()
+
+        for action in ("rebuild", "load", "generate"):
+            with self.subTest(action=action):
+                if action == "rebuild":
+                    response = self.client.post("/api/planner/edit_lineup", json={
+                        "lineup_id": lineup.lineup_id, "action": "rebuild"})
+                elif action == "load":
+                    response = self.client.post("/api/planner/load")
+                else:
+                    response = self.client.post("/api/planner/generate", json={
+                        "contest_distribution": {"Scorcher": 1}})
+                self.assertEqual(response.status_code, 200, response.get_json())
+                current = self.test_state.active_plan.lineups[0]
+                fixed = next(s for s in current.slots if s.slot_name == slot.slot_name)
+                self.assertEqual(fixed.card.card.card_id, "qb1")
+                self.assertTrue(fixed.is_locked)
+                self.assertTrue(current.is_valid, current.validation_errors)
+                self.assertEqual(fixed.card.adjusted_projection, -3.0)
+                self.assertFalse(next(c for c in self.test_state.planner_cards
+                                      if c.card.card_id == unused.card_id).is_eligible)
+                self.assertNotIn(unused.card_id, {s.card.card.card_id for s in current.slots})
+                self.assertEqual({k: v.to_dict() for k, v in self.test_state.live_states.items()}, scores)
+                self.assertEqual((self.test_state.plans_dir / "latest_plan.json").read_bytes(), saved)
+
+        # Zero finals and in-progress banked points remain valid without a CSV row.
+        for update, expected in (({"game_status": "FINAL", "final_points": 0}, 0),
+                                 ({"game_status": "IN_PROGRESS", "live_points": 5}, 7.5)):
+            self.client.post("/api/live/update_player_state", json={"athlete_key": key, **update})
+            response = self.client.post("/api/planner/edit_lineup", json={
+                "lineup_id": current.lineup_id, "action": "rebuild"})
+            self.assertEqual(response.status_code, 200, response.get_json())
+            self.assertEqual(next(s.card.adjusted_projection for s in current.slots
+                                  if s.card.card.card_id == "qb1"), expected)
+
+        # A manual lock alone cannot make an unprojected upcoming player eligible.
+        self.client.post("/api/live/update_player_state", json={
+            "athlete_key": key, "game_status": "UPCOMING"})
+        response = self.client.post("/api/planner/edit_lineup", json={
+            "lineup_id": current.lineup_id, "action": "rebuild"})
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("Locked card qb1 is unavailable", response.get_json()["message"])
 
     def test_exclusion_preserves_lock_on_assigned_copy(self):
         """Rule 5: excluding a player must never clear a locked slot."""
@@ -889,11 +1063,52 @@ class V1Packet2ManualConstructionTests(unittest.TestCase):
         self.assertIn("allowed entries", res.get_json()["message"])
         self.assertEqual(self._snapshot(self.test_state.active_plan), before)
 
-        # A contest outside the selected tiers is rejected without mutation.
+        # Adding a contest that wasn't in the initial generation succeeds.
         res = self.client.post("/api/planner/edit_lineup", json={"action": "add", "contest_name": "Volcano"})
+        self.assertEqual(res.status_code, 200, res.get_json())
+        self.assertEqual(len(self.test_state.active_plan.lineups), 6)
+
+        # An unknown or invalid contest is rejected without mutation.
+        snap_after_volcano = self._snapshot(self.test_state.active_plan)
+        res = self.client.post("/api/planner/edit_lineup", json={"action": "add", "contest_name": "InvalidContest"})
         self.assertEqual(res.status_code, 400)
-        self.assertIn("selected contest tiers", res.get_json()["message"])
-        self.assertEqual(self._snapshot(self.test_state.active_plan), before)
+        self.assertEqual(self._snapshot(self.test_state.active_plan), snap_after_volcano)
+
+    def test_primetime_pyro_entry_cap_is_three(self):
+        self.client.post("/api/planner/generate", json={"contest_distribution": {"Primetime Pyro": 1}})
+        self.assertEqual(len(self.test_state.active_plan.lineups), 1)
+
+        # Primetime Pyro allows at most 3 entries; add 2 more drafts up to 3.
+        for expected_count in (2, 3):
+            res = self.client.post("/api/planner/edit_lineup", json={"action": "add", "contest_name": "Primetime Pyro"})
+            self.assertEqual(res.status_code, 200, res.get_json())
+            self.assertEqual(len(self.test_state.active_plan.lineups), expected_count)
+
+        # A 4th entry exceeds the cap of 3 and must be rejected.
+        res = self.client.post("/api/planner/edit_lineup", json={"action": "add", "contest_name": "Primetime Pyro"})
+        self.assertEqual(res.status_code, 400)
+        self.assertIn("allowed entries", res.get_json()["message"])
+        self.assertEqual(len(self.test_state.active_plan.lineups), 3)
+
+    def test_generation_does_not_restrict_subsequent_manual_additions(self):
+        # User starts with just 1 Scorcher from the batch generator.
+        self.client.post("/api/planner/generate", json={"contest_distribution": {"Scorcher": 1}})
+        self.assertEqual(len(self.test_state.active_plan.lineups), 1)
+
+        # User decides to add a Volcano lineup - should succeed.
+        res_volcano = self.client.post("/api/planner/edit_lineup", json={"action": "add", "contest_name": "Volcano"})
+        self.assertEqual(res_volcano.status_code, 200, res_volcano.get_json())
+
+        # User decides to add another Scorcher lineup beyond the initial generator count - should succeed up to contest limit (5).
+        res_scorcher2 = self.client.post("/api/planner/edit_lineup", json={"action": "add", "contest_name": "Scorcher"})
+        self.assertEqual(res_scorcher2.status_code, 200, res_scorcher2.get_json())
+
+        # User adds a Primetime Pyro lineup - should succeed.
+        res_pyro = self.client.post("/api/planner/edit_lineup", json={"action": "add", "contest_name": "Primetime Pyro"})
+        self.assertEqual(res_pyro.status_code, 200, res_pyro.get_json())
+
+        # All 4 lineups are in the plan.
+        self.assertEqual(len(self.test_state.active_plan.lineups), 4)
 
     def test_partial_draft_fills_step_by_step(self):
         self.client.post("/api/planner/generate", json={"contest_distribution": {"Scorcher": 1}})
@@ -1491,26 +1706,22 @@ class V1CorrectionTests(unittest.TestCase):
         self.assertEqual(body["lineup"]["lineup_id"], draft.lineup_id)
         self.assertEqual(len(body["plan"]["lineups"]), 1)
 
-    def test_manual_entry_requests_respect_saved_selection(self):
+    def test_manual_entry_requests_not_restricted_by_saved_selection(self):
+        # Adding a draft with Scorcher does not prevent adding another Scorcher or Volcano
         self.assertEqual(self._add_draft("Scorcher", 1).status_code, 200)
-        before = self.test_state.active_plan.to_dict()
-        for fields in (
-            {"contest_name": "Scorcher"},
-            {"contest_name": "Volcano", "entry_limit": 1},
-            {"contest_name": "Scorcher", "entry_limit": 2},
-            {"contest_name": "Scorcher", "entry_limit": 3, "contest_distribution": {"Scorcher": 2}},
-            {"contest_name": "Volcano", "contest_distribution": {"Volcano": 1}},
-        ):
-            with self.subTest(fields=fields):
-                response = self.client.post("/api/planner/edit_lineup", json={"action": "add", **fields})
-                self.assertEqual(response.status_code, 400, response.get_json())
-                self.assertEqual(self.test_state.active_plan.to_dict(), before)
-        self.assertEqual(self._add_draft("Scorcher", 2).status_code, 200)
-        self.assertEqual(self.test_state.active_plan.inventory_summary["contest_distribution"], {"Scorcher": 2})
+        # Adding another Scorcher without passing entry_limit succeeds up to contest maximum (5)
+        res_scorcher = self.client.post("/api/planner/edit_lineup", json={"action": "add", "contest_name": "Scorcher"})
+        self.assertEqual(res_scorcher.status_code, 200)
+        # Adding Volcano also succeeds
+        res_volcano = self.client.post("/api/planner/edit_lineup", json={"action": "add", "contest_name": "Volcano"})
+        self.assertEqual(res_volcano.status_code, 200)
+        # An invalid contest is rejected
+        res_invalid = self.client.post("/api/planner/edit_lineup", json={"action": "add", "contest_name": "UnknownTier"})
+        self.assertEqual(res_invalid.status_code, 400)
+        # Saving and loading preserves all manual additions
         self.assertEqual(self.client.post("/api/planner/save").status_code, 200)
         self.assertEqual(self.client.post("/api/planner/load").status_code, 200)
-        response = self.client.post("/api/planner/edit_lineup", json={"action": "add", "contest_name": "Scorcher"})
-        self.assertEqual(response.status_code, 400)
+        self.assertEqual(len(self.test_state.active_plan.lineups), 3)
 
     def test_manual_draft_fills_reaches_selected_limit_and_saves(self):
         """Fill a manual draft, hit a selected limit below the max, then save/load."""
@@ -1578,6 +1789,111 @@ class V1CorrectionTests(unittest.TestCase):
             snapshot,
         )
         self.assertEqual(self.test_state.active_plan.inventory_summary["contest_distribution"], tiers)
+
+
+class Week2RefreshRegressionTests(unittest.TestCase):
+    """Sep. 16 refresh data must not remap protected live entries by row number."""
+
+    @classmethod
+    def setUpClass(cls):
+        app.config.update(TESTING=True, MAX_CONTENT_LENGTH=8 * 1024 * 1024)
+
+    def setUp(self):
+        root = Path(__file__).resolve().parent
+        self.roster_path = root / "ExportedRoster_20260916104224.csv"
+        self.snapshot_path = root / "data" / "snapshots" / "snapshot_Thu-Mon_2026-09-16.json"
+        self.client = app.test_client()
+        self.orig_state = app_module.STATE
+        self.tmp_dir = tempfile.TemporaryDirectory()
+        self.test_state = PlannerAppState(root_dir=self.tmp_dir.name)
+        self.test_state.roster_cards = multi_lineup_planner.parse_roster_cards(self.roster_path)
+        self.test_state.snapshot = ProjectionsSnapshot.from_dict(json.loads(self.snapshot_path.read_text()))
+        self.test_state.recompute_planner_cards()
+        app_module.STATE = self.test_state
+
+    def tearDown(self):
+        app_module.STATE = self.orig_state
+        self.tmp_dir.cleanup()
+
+    def test_reordered_sep16_roster_preserves_locked_slots_scores_and_card_uniqueness(self):
+        with self.roster_path.open("r", encoding="utf-8-sig", newline="") as source:
+            reader = csv.reader(source)
+            rows = list(reader)
+        reordered = io.StringIO()
+        writer = csv.writer(reordered, lineterminator="\n")
+        writer.writerow(rows[0])
+        writer.writerows(reversed(rows[1:]))
+        reordered_card_ids = {
+            card.card_id
+            for card in multi_lineup_planner.parse_roster_cards(io.StringIO(reordered.getvalue()))
+        }
+
+        generated = self.client.post(
+            "/api/planner/generate",
+            json={"contest_distribution": {"Scorcher": 2}, "target_count": 2},
+        )
+        self.assertEqual(generated.status_code, 200, generated.get_json())
+        self.assertEqual(len(self.test_state.roster_cards), 346)
+        self.assertEqual(sum(c.is_eligible for c in self.test_state.planner_cards), 325)
+
+        protected = []
+        for index, lineup in enumerate(self.test_state.active_plan.lineups):
+            slot = next(
+                slot for slot in lineup.slots
+                if slot.card is not None and slot.card.card.card_id not in reordered_card_ids
+            )
+            locked = self.client.post(
+                "/api/planner/toggle_lock",
+                json={"lineup_id": lineup.lineup_id, "slot_name": slot.slot_name},
+            )
+            self.assertEqual(locked.status_code, 200, locked.get_json())
+            score = 7.0 + index
+            scored = self.client.post(
+                "/api/live/update_player_state",
+                json={
+                    "athlete_key": slot.card.card.athlete_key,
+                    "game_status": "IN_PROGRESS",
+                    "actual_score": score,
+                },
+            )
+            self.assertEqual(scored.status_code, 200, scored.get_json())
+            protected.append((lineup.lineup_id, slot.slot_name, slot.card.card.athlete_key, score))
+
+        before_ids = {
+            (lineup_id, slot_name): next(
+                slot.card.card.card_id
+                for lineup in self.test_state.active_plan.lineups
+                if lineup.lineup_id == lineup_id
+                for slot in lineup.slots
+                if slot.slot_name == slot_name
+            )
+            for lineup_id, slot_name, _, _ in protected
+        }
+
+        refreshed = self.client.post(
+            "/api/roster/upload",
+            data={"roster_file": (io.BytesIO(reordered.getvalue().encode("utf-8")), "sep16-reordered.csv")},
+            content_type="multipart/form-data",
+        )
+        self.assertEqual(refreshed.status_code, 200, refreshed.get_json())
+
+        assigned_ids = [
+            slot.card.card.card_id
+            for lineup in self.test_state.active_plan.lineups
+            for slot in lineup.slots
+            if slot.card is not None
+        ]
+        self.assertEqual(len(assigned_ids), len(set(assigned_ids)))
+
+        for lineup_id, slot_name, athlete_key, score in protected:
+            lineup = next(lineup for lineup in self.test_state.active_plan.lineups if lineup.lineup_id == lineup_id)
+            slot = next(slot for slot in lineup.slots if slot.slot_name == slot_name)
+            self.assertTrue(slot.is_locked)
+            self.assertEqual(slot.card.card.athlete_key, athlete_key)
+            self.assertNotEqual(slot.card.card.card_id, before_ids[(lineup_id, slot_name)])
+            live = self.test_state.live_states[athlete_key]
+            self.assertEqual(live.game_status, "IN_PROGRESS")
+            self.assertEqual(live.live_points, score)
 
 
 if __name__ == "__main__":

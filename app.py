@@ -7,7 +7,7 @@ import math
 import os
 import secrets
 from collections import Counter
-from dataclasses import asdict
+from dataclasses import asdict, replace
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -18,9 +18,11 @@ from flask import Flask, Response, jsonify, render_template, request
 import contest_config
 import dff_client
 import live_lineup_manager
+import market_advisor
 import multi_lineup_planner
 import payout_evaluator
 import planner_update_check
+import schedule_manager
 from optimizer_core import CONTESTS, OptimizationResult, normalize_team, optimize_lineup
 
 
@@ -32,28 +34,29 @@ app.secret_key = os.environ.get("FLASK_SECRET_KEY", "gameblazers-lineup-planner-
 password_file = os.environ.get("PLANNER_PASSWORD_FILE")
 app.config["PREVIEW_PASSWORD"] = Path(password_file).read_text().strip() if password_file else None
 app.config["PREVIEW_USERNAME"] = os.environ.get("PLANNER_USERNAME", "friend")
-if os.environ.get("PLANNER_INSTANCE_ROOT") and not app.config["PREVIEW_PASSWORD"]:
+allow_public_preview = os.environ.get("PLANNER_ALLOW_PUBLIC") == "1"
+if os.environ.get("PLANNER_INSTANCE_ROOT") and not app.config["PREVIEW_PASSWORD"] and not allow_public_preview:
     raise RuntimeError("An isolated preview requires PLANNER_PASSWORD_FILE.")
 
 
 @app.before_request
 def protect_private_preview():
     password = app.config.get("PREVIEW_PASSWORD")
-    if not password:
-        return None
-    auth = request.authorization
-    if not auth or auth.type != "basic" or auth.username != app.config["PREVIEW_USERNAME"] or not secrets.compare_digest((auth.password or "").encode(), password.encode()):
-        return Response("Sign in to the private GameBlazers preview.", 401,
-                        {"WWW-Authenticate": 'Basic realm="GameBlazers private preview"'})
-    origin = request.headers.get("Origin")
-    landing_page = request.method == "GET" and request.path in ("/", "/planner")
-    if (request.headers.get("Sec-Fetch-Site") == "cross-site" and not landing_page) or (origin and urlsplit(origin).netloc != request.host):
-        return Response("Cross-site requests are not allowed.", 403)
+    if password:
+        auth = request.authorization
+        if not auth or auth.type != "basic" or auth.username != app.config["PREVIEW_USERNAME"] or not secrets.compare_digest((auth.password or "").encode(), password.encode()):
+            return Response("Sign in to the private GameBlazers preview.", 401,
+                            {"WWW-Authenticate": 'Basic realm="GameBlazers private preview"'})
+    if os.environ.get("PLANNER_INSTANCE_ROOT"):
+        origin = request.headers.get("Origin")
+        landing_page = request.method == "GET" and request.path in ("/", "/planner")
+        if (request.headers.get("Sec-Fetch-Site") == "cross-site" and not landing_page) or (origin and urlsplit(origin).netloc != request.host):
+            return Response("Cross-site requests are not allowed.", 403)
 
 
 @app.after_request
 def private_preview_headers(response):
-    if app.config.get("PREVIEW_PASSWORD"):
+    if os.environ.get("PLANNER_INSTANCE_ROOT"):
         response.headers["Cache-Control"] = "no-store"
         response.headers["X-Frame-Options"] = "DENY"
         response.headers["X-Content-Type-Options"] = "nosniff"
@@ -151,25 +154,65 @@ class PlannerAppState:
                     self.snapshot = self.snapshot_store.load_latest()
                 except Exception:
                     pass
-
+        # Auto-load Thursday/live scores if present
+        self.load_thursday_scores()
         self.recompute_planner_cards()
+
+    def load_thursday_scores(self) -> None:
+        data_dir = self.root_dir / "data"
+        scores_candidates = sorted(
+            list(data_dir.glob("week*_thursday_scores.csv")),
+            key=lambda p: p.name,
+            reverse=True,
+        )
+        if not scores_candidates and (data_dir / "thursday_scores.csv").exists():
+            scores_candidates = [data_dir / "thursday_scores.csv"]
+        if not self.isolated:
+            opt_data = self.root_dir.parent / "lineup_optimizer" / "data"
+            scores_candidates.extend(
+                sorted(
+                    list(opt_data.glob("week*_thursday_scores.csv")),
+                    key=lambda p: p.name,
+                    reverse=True,
+                )
+            )
+        for sc_path in scores_candidates:
+            if sc_path.exists():
+                try:
+                    with sc_path.open("r", encoding="utf-8-sig") as f:
+                        states = live_lineup_manager.parse_live_scores_csv(f)
+                        for s in states:
+                            self.live_states[s.athlete_key] = s
+                    break
+                except Exception:
+                    pass
 
     def recompute_planner_cards(self) -> None:
         self.salary_source = "roster"
-        if not self.roster_cards or not self.snapshot:
-            self.planner_cards = multi_lineup_planner.join_cards_with_projections(self.roster_cards, [])
+        if not self.roster_cards:
+            self.planner_cards = []
             return
-        self.planner_cards = multi_lineup_planner.join_cards_with_projections(
-            self.roster_cards,
-            self.snapshot.players,
-            salary_source=self.salary_source,
-            overrides=self.overrides,
-        )
+        if not self.snapshot:
+            self.planner_cards = multi_lineup_planner.join_cards_with_projections(self.roster_cards, [])
+        else:
+            self.planner_cards = multi_lineup_planner.join_cards_with_projections(
+                self.roster_cards,
+                self.snapshot.players,
+                salary_source=self.salary_source,
+                overrides=self.overrides,
+            )
+        team_schedule = schedule_manager.build_team_schedule_map(target_time=self.simulated_time)
         for c in self.planner_cards:
+            norm_team = normalize_team(c.card.team)
+            sched_info = team_schedule.get(norm_team, {})
+            if not getattr(c, "kickoff_time", "") and sched_info.get("kickoff_time"):
+                c.kickoff_time = sched_info["kickoff_time"]
+            if not getattr(c, "game_date", "") and sched_info.get("game_date"):
+                c.game_date = sched_info["game_date"]
+            if not getattr(c, "opp", "") and sched_info.get("opp"):
+                c.opp = sched_info["opp"]
+
             akey = c.card.athlete_key
-            if akey in self.excluded_athlete_keys:
-                c.is_eligible = False
-                c.ineligibility_reason = "Excluded by you"
             if akey not in self.live_states:
                 self.live_states[akey] = live_lineup_manager.PlayerLiveState(
                     athlete_key=akey,
@@ -180,7 +223,77 @@ class PlannerAppState:
                     remaining_projection=c.raw_projection,
                     remaining_stdev=round(0.35 * c.raw_projection, 2),
                     profile_type="standard",
+                    opp=getattr(c, "opp", "") or "",
+                    game_date=getattr(c, "game_date", "") or "",
+                    kickoff_time=getattr(c, "kickoff_time", "") or "",
                 )
+            else:
+                existing_player = self.live_states[akey]
+                if not existing_player.opp and getattr(c, "opp", ""):
+                    existing_player.opp = getattr(c, "opp", "")
+                if not existing_player.game_date and getattr(c, "game_date", ""):
+                    existing_player.game_date = getattr(c, "game_date", "")
+                if not existing_player.kickoff_time and getattr(c, "kickoff_time", ""):
+                    existing_player.kickoff_time = getattr(c, "kickoff_time", "")
+
+            player = self.live_states[akey]
+            if player.game_status in (live_lineup_manager.GAME_STATUS_IN_PROGRESS, live_lineup_manager.GAME_STATUS_FINAL):
+                if player.game_status == live_lineup_manager.GAME_STATUS_FINAL:
+                    raw_pts = player.final_points
+                else:
+                    raw_pts = player.live_points + (player.remaining_projection if player.remaining_is_estimate else 0.0)
+                c.raw_projection = round(raw_pts, 2)
+                c.adjusted_projection = round(raw_pts * c.card.multiplier, 3)
+                c.is_matched = True
+
+                is_active = c.card.status.casefold() in ("active", "listed")
+                valid_mult = c.card.multiplier > 0
+                valid_salary = c.weekly_salary > 0
+                valid_pos = c.card.position in multi_lineup_planner.POSITIONS
+                not_excluded = akey not in self.excluded_athlete_keys
+
+                if not is_active:
+                    c.is_eligible = False
+                    c.ineligibility_reason = f"Card status is '{c.card.status}' (Active or Listed required)"
+                elif c.card.expires:
+                    exp_clean = c.card.expires.strip().split("T")[0]
+                    today_clean = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+                    if exp_clean and exp_clean != "N/A" and exp_clean < today_clean:
+                        c.is_eligible = False
+                        c.ineligibility_reason = f"Card expired on {c.card.expires}"
+                    elif not valid_mult:
+                        c.is_eligible = False
+                        c.ineligibility_reason = f"Non-positive multiplier: {c.card.multiplier}"
+                elif not valid_mult:
+                    c.is_eligible = False
+                    c.ineligibility_reason = f"Non-positive multiplier: {c.card.multiplier}"
+                elif not valid_salary:
+                    c.is_eligible = False
+                    c.ineligibility_reason = "Roster salary is zero or negative"
+                elif not valid_pos:
+                    c.is_eligible = False
+                    c.ineligibility_reason = f"Unsupported position: {c.card.position}"
+                elif not not_excluded:
+                    c.is_eligible = False
+                    c.ineligibility_reason = "Excluded by you"
+                else:
+                    c.is_eligible = True
+                    c.ineligibility_reason = None
+
+                if player.opp and not getattr(c, "opp", None):
+                    c.opp = player.opp
+                if player.game_date and not getattr(c, "game_date", None):
+                    c.game_date = player.game_date
+                if player.kickoff_time and not getattr(c, "kickoff_time", None):
+                    c.kickoff_time = player.kickoff_time
+            else:
+                if akey in self.excluded_athlete_keys:
+                    c.is_eligible = False
+                    c.ineligibility_reason = "Excluded by you"
+                if not player.is_locked(self.simulated_time) and not player.remaining_is_estimate:
+                    player.remaining_projection = c.raw_projection
+                    player.remaining_stdev = round(0.35 * c.raw_projection, 2)
+        self.last_reallocation_plan = None
         self.sync_active_plan()
 
     def import_dashboard_schedule(self, season: int, week: int) -> dict[str, Any]:
@@ -197,22 +310,34 @@ class PlannerAppState:
         if not selected:
             raise ValueError("No dashboard games found for this week.")
         kickoffs = {}
+        opponents = {}
         for game in selected:
             kickoff = datetime.fromisoformat(str(game.get("kickoff", "")).replace("Z", "+00:00"))
             if kickoff.tzinfo is None:
                 raise ValueError("Dashboard kickoff times must include a timezone.")
-            for field in ("away_team", "home_team"):
-                team = normalize_team(game.get(field, ""))
-                if not team or team in kickoffs:
-                    raise ValueError("Dashboard games contain a missing or duplicate team.")
-                kickoffs[team] = kickoff.astimezone(timezone.utc).isoformat()
+            away_raw = game.get("away_team", "")
+            home_raw = game.get("home_team", "")
+            away = normalize_team(away_raw)
+            home = normalize_team(home_raw)
+            if not away or not home:
+                raise ValueError("Dashboard games contain a missing or duplicate team.")
+            if away in kickoffs or home in kickoffs:
+                raise ValueError("Dashboard games contain a missing or duplicate team.")
+            ko_iso = kickoff.astimezone(timezone.utc).isoformat()
+            kickoffs[away] = ko_iso
+            kickoffs[home] = ko_iso
+            opponents[away] = f"@{home}"
+            opponents[home] = f"vs {away}"
         pending = []
         matched = 0
         for player in self.live_states.values():
-            kickoff = kickoffs.get(normalize_team(player.team))
+            norm_team = normalize_team(player.team)
+            kickoff = kickoffs.get(norm_team)
             if not kickoff:
                 continue
             matched += 1
+            if norm_team in opponents:
+                player.opp = opponents[norm_team]
             if player.kickoff_time:
                 if datetime.fromisoformat(player.kickoff_time.replace("Z", "+00:00")) != datetime.fromisoformat(kickoff):
                     raise ValueError(f"Existing kickoff conflicts for {player.player_name}. No times were changed.")
@@ -223,6 +348,21 @@ class PlannerAppState:
         # Validate the entire import before touching player state or swap recommendations.
         for player, kickoff in pending:
             player.kickoff_time = kickoff
+        for c in self.planner_cards:
+            norm_t = normalize_team(c.card.team)
+            if norm_t in kickoffs:
+                c.kickoff_time = kickoffs[norm_t]
+            if norm_t in opponents:
+                c.opp = opponents[norm_t]
+        if self.active_plan:
+            for l in self.active_plan.lineups:
+                for s in l.slots:
+                    if s.card:
+                        norm_t = normalize_team(s.card.card.team)
+                        if norm_t in kickoffs:
+                            s.card.kickoff_time = kickoffs[norm_t]
+                        if norm_t in opponents:
+                            s.card.opp = opponents[norm_t]
         self.last_reallocation_plan = None
         self.dashboard_schedule = {
             "season": season, "week": week, "games": len(selected),
@@ -263,17 +403,50 @@ class PlannerAppState:
         self.active_plan.roster_cards = list(self.planner_cards)
         self.active_plan.projection_overrides = dict(self.overrides)
         self.active_plan.excluded_athlete_keys = sorted(self.excluded_athlete_keys)
-        card_map = {c.card.card_id: c for c in self.planner_cards}
 
-        # Update assigned cards in slots
+        card_pool = {c.card.card_id: c for c in self.planner_cards}
+        claimed_ids: set[str] = set()
+        lineup_conflicts: dict[str, list[str]] = {}
+
+        # Prioritize locked lineups and locked slots when resolving inventory
+        all_slots: list[tuple[int, Any, Any, Any]] = []
         for l in self.active_plan.lineups:
             for s in l.slots:
                 if s.card:
-                    if s.card.card.card_id in card_map:
-                        s.card = card_map[s.card.card.card_id]
-                    else:
-                        # Card is no longer in inventory
-                        s.card = None
+                    prio = 0
+                    if l.is_locked:
+                        prio -= 2
+                    if s.is_locked:
+                        prio -= 1
+                    all_slots.append((prio, l, s, s.card))
+
+        all_slots.sort(key=lambda x: x[0])
+
+        for _, l, s, prev_pc in all_slots:
+            matched_c = resolve_card_for_slot(prev_pc, card_pool, claimed_ids)
+            if matched_c is not None:
+                player = self.live_states.get(matched_c.card.athlete_key)
+                # A remaining-games CSV may omit started players. Keep only their
+                # existing placements usable; the unassigned inventory stays unchanged.
+                if (player and player.is_locked(self.simulated_time)
+                        and matched_c.card.status.casefold() in ("active", "listed")
+                        and matched_c.card.multiplier > 0 and matched_c.weekly_salary > 0
+                        and matched_c.card.position in multi_lineup_planner.POSITIONS
+                        and (matched_c.is_eligible or matched_c.ineligibility_reason in (
+                            "No weekly projection found for athlete", "Projection is zero or negative"))):
+                    matched_c = replace(
+                        matched_c, raw_projection=player.effective_mean(1.0),
+                        adjusted_projection=player.effective_mean(matched_c.card.multiplier),
+                        is_eligible=True, ineligibility_reason=None,
+                    )
+                s.card = matched_c
+            else:
+                prev_c = prev_pc.card if hasattr(prev_pc, "card") else prev_pc
+                pname = getattr(prev_c, "player_name", "Unknown")
+                pmult = getattr(prev_c, "multiplier", 1.0)
+                s.card = None
+                conf_msg = f"Conflict: Slot '{s.slot_name}' player '{pname}' ({pmult}x) is no longer available in current roster inventory."
+                lineup_conflicts.setdefault(l.lineup_id, []).append(conf_msg)
 
         # Track usage and revalidate all lineups
         card_usage: dict[str, list[str]] = {}
@@ -286,11 +459,72 @@ class PlannerAppState:
             contest = self.contests.get(l.contest_name) or self.active_plan.contests.get(l.contest_name)
             if contest:
                 multi_lineup_planner.recalculate_lineup(l, contest, card_usage)
+            if l.lineup_id in lineup_conflicts:
+                for conf in lineup_conflicts[l.lineup_id]:
+                    if conf not in l.validation_errors:
+                        l.validation_errors.append(conf)
+                l.is_valid = False
 
         self.active_plan.total_weekly_projection = round(sum(l.total_projection for l in self.active_plan.lineups), 2)
         self.active_plan.total_weekly_estimated_payout = round(
             sum(l.estimated_payout for l in self.active_plan.lineups if l.is_valid), 2
         )
+
+
+def resolve_card_for_slot(
+    card_data: Any,
+    card_pool: dict[str, multi_lineup_planner.PlannerCard],
+    claimed_ids: set[str],
+) -> multi_lineup_planner.PlannerCard | None:
+    """Resolve a slot's card from the current planner card pool.
+
+    Supports exact card_id match, or identity matching on athlete_key,
+    position, multiplier, and collection group when roster row numbers shift.
+    Claims matched card IDs so duplicate copies are allocated cleanly.
+    """
+    if not card_data:
+        return None
+    card = card_data.card if hasattr(card_data, "card") else card_data
+    cid = card.get("card_id") if isinstance(card, dict) else getattr(card, "card_id", None)
+    akey = card.get("athlete_key") if isinstance(card, dict) else getattr(card, "athlete_key", "")
+    pos = card.get("position") if isinstance(card, dict) else getattr(card, "position", "")
+    try:
+        mult = float(card.get("multiplier", 1.0) if isinstance(card, dict) else getattr(card, "multiplier", 1.0))
+    except (TypeError, ValueError):
+        mult = 1.0
+    col_grp = card.get("collection_group") if isinstance(card, dict) else getattr(card, "collection_group", None)
+
+    # 1. Exact card_id match
+    if cid and cid in card_pool and cid not in claimed_ids:
+        claimed_ids.add(cid)
+        return card_pool[cid]
+
+    # 2. Match by athlete_key, position, multiplier, and collection group
+    for cand_id, cand in card_pool.items():
+        if cand_id in claimed_ids:
+            continue
+        if (
+            cand.card.athlete_key == akey
+            and cand.card.position == pos
+            and abs(cand.card.multiplier - mult) < 1e-4
+            and getattr(cand.card, "collection_group", "Core") == (col_grp or "Core")
+        ):
+            claimed_ids.add(cand_id)
+            return cand
+
+    # 3. Match by athlete_key, position, and multiplier (flexible collection group)
+    for cand_id, cand in card_pool.items():
+        if cand_id in claimed_ids:
+            continue
+        if (
+            cand.card.athlete_key == akey
+            and cand.card.position == pos
+            and abs(cand.card.multiplier - mult) < 1e-4
+        ):
+            claimed_ids.add(cand_id)
+            return cand
+
+    return None
 
 
 STATE = PlannerAppState(root_dir=os.environ.get("PLANNER_INSTANCE_ROOT"))
@@ -483,6 +717,13 @@ def api_dff_refresh():
             return jsonify({"status": "error", "message": "Extracted player pool too small"}), 400
 
         snap = dff_client.parse_dff_players(raw_players, selected.slate_id, selected, STATE.overrides)
+        if STATE.snapshot and STATE.snapshot.players:
+            new_keys = {p.athlete_key for p in snap.players}
+            for prev_p in STATE.snapshot.players:
+                if prev_p.athlete_key not in new_keys:
+                    p_live = STATE.live_states.get(prev_p.athlete_key)
+                    if p_live and p_live.game_status in (live_lineup_manager.GAME_STATUS_IN_PROGRESS, live_lineup_manager.GAME_STATUS_FINAL):
+                        snap.players.append(prev_p)
         STATE.snapshot_store.save_snapshot(snap)
         STATE.snapshot = snap
         STATE.recompute_planner_cards()
@@ -519,6 +760,13 @@ def api_projections_upload():
         if err:
             return jsonify({"status": "error", "message": err}), 400
         snap = dff_client.parse_projections_csv_stream(stream, source_name=upload.filename or "uploaded_csv", user_overrides=STATE.overrides)
+        if STATE.snapshot and STATE.snapshot.players:
+            new_keys = {p.athlete_key for p in snap.players}
+            for prev_p in STATE.snapshot.players:
+                if prev_p.athlete_key not in new_keys:
+                    p_live = STATE.live_states.get(prev_p.athlete_key)
+                    if p_live and p_live.game_status in (live_lineup_manager.GAME_STATUS_IN_PROGRESS, live_lineup_manager.GAME_STATUS_FINAL):
+                        snap.players.append(prev_p)
         STATE.snapshot_store.save_snapshot(snap)
         STATE.snapshot = snap
         STATE.recompute_planner_cards()
@@ -543,12 +791,11 @@ def api_roster_upload():
         cards = multi_lineup_planner.parse_roster_cards(stream)
         if not cards:
             raise ValueError("The roster contains no cards.")
-        if STATE.isolated:
-            roster_path = STATE.root_dir / "data" / "raw" / "My_roster.csv"
-            roster_path.parent.mkdir(parents=True, exist_ok=True)
-            temporary = roster_path.with_suffix(".tmp")
-            temporary.write_text(stream.getvalue(), encoding="utf-8")
-            temporary.replace(roster_path)
+        roster_path = STATE.root_dir / "data" / "raw" / "My_roster.csv"
+        roster_path.parent.mkdir(parents=True, exist_ok=True)
+        temporary = roster_path.with_suffix(".tmp")
+        temporary.write_text(stream.getvalue(), encoding="utf-8")
+        temporary.replace(roster_path)
         STATE.roster_cards = cards
         STATE.recompute_planner_cards()
         return jsonify({
@@ -865,10 +1112,10 @@ def api_planner_exclude():
 def _plan_for_manual_entry(data: dict[str, Any], plan):
     """Validate an add request and return (plan, entry_limit, error).
 
-    When no plan exists this builds a manual WeeklyPlan from the selected contest
-    controls. It never calls the solver: the first draft is just an unfilled entry.
-    The resolved entry limit is the selected count, which may be below the contest
-    maximum. Existing plans are returned untouched on any rejection.
+    When no plan exists this builds a manual WeeklyPlan. It never calls the solver:
+    the first draft is just an unfilled entry. Existing plans are returned untouched
+    on any rejection. Lineups can be added for any eligible contest up to that
+    contest's entry limit.
     """
     contest_name = data.get("contest_name")
     if not isinstance(contest_name, str) or contest_name not in STATE.contests:
@@ -878,8 +1125,6 @@ def _plan_for_manual_entry(data: dict[str, Any], plan):
         return plan, None, f"Contest '{contest_name}' is not open for entry."
 
     requested = data.get("contest_distribution")
-    if requested is None and plan is not None:
-        requested = (plan.inventory_summary or {}).get("contest_distribution")
     if requested is not None and not isinstance(requested, dict):
         return plan, None, "Selected contest entries must be an object of entry counts."
     selected: dict[str, int] = {}
@@ -911,22 +1156,16 @@ def _plan_for_manual_entry(data: dict[str, Any], plan):
         return plan, None, "The entry limit must match the selected contest count."
     if entry_limit is None and contest_name in selected:
         entry_limit = selected[contest_name]
-    if entry_limit is None:
-        # Legacy plans without selected counts use the contest maximum.
-        distribution = (plan.inventory_summary or {}).get("contest_distribution") if plan is not None else None
-        if isinstance(distribution, dict) and contest_name not in distribution:
-            return plan, None, f"'{contest_name}' is not one of the selected contest tiers."
-    else:
+
+    if entry_limit is not None:
         if isinstance(entry_limit, bool) or not isinstance(entry_limit, int) or entry_limit < 1:
             return plan, None, f"Select at least one {contest_name} entry before adding a draft."
         if contest.default_entry_limit is not None and entry_limit > contest.default_entry_limit:
             return plan, None, f"{contest_name} allows at most {contest.default_entry_limit} entries."
 
     if plan is None:
-        if entry_limit is None:
-            return plan, None, f"Select at least one {contest_name} entry before adding a draft."
         if not selected:
-            selected[contest_name] = entry_limit
+            selected[contest_name] = entry_limit if entry_limit is not None else 1
         now = datetime.now(timezone.utc).isoformat()
         plan = multi_lineup_planner.WeeklyPlan(
             plan_id=f"manual_{int(datetime.now(timezone.utc).timestamp())}",
@@ -951,8 +1190,8 @@ def api_planner_edit_lineup():
     if not isinstance(data, dict):
         return jsonify(status="error", message="Expected lineup settings."), 400
     action = data.get("action")
-    if action not in ("remove", "rebuild", "clear", "add"):
-        return jsonify(status="error", message="Choose a lineup to remove or rebuild, or a slot to clear."), 400
+    if action not in ("remove", "rebuild", "clear", "add", "optimize_slots", "optimize_all_slots"):
+        return jsonify(status="error", message="Choose a valid lineup action."), 400
     plan = STATE.active_plan
     if action == "add":
         # Build or extend a manual plan from the selected contest controls.
@@ -977,9 +1216,29 @@ def api_planner_edit_lineup():
     if not plan:
         return jsonify(status="error", message="No active weekly plan."), 400
 
+    if action == "optimize_all_slots":
+        for l in plan.lineups:
+            if not l.is_locked:
+                multi_lineup_planner.optimize_lineup_slots(l)
+                if l.contest_name in STATE.contests:
+                    multi_lineup_planner.recalculate_lineup(l, STATE.contests[l.contest_name])
+        STATE.sync_active_plan()
+        STATE.last_reallocation_plan = None
+        return jsonify(status="success", message="Optimized all unlocked lineups for late swap.", plan=plan.to_dict())
+
     lineup = next((l for l in plan.lineups if l.lineup_id == data.get("lineup_id")), None)
     if not lineup:
         return jsonify(status="error", message="Choose a lineup to edit."), 400
+
+    if action == "optimize_slots":
+        if lineup.is_locked:
+            return jsonify(status="error", message="Unlock this lineup first."), 400
+        multi_lineup_planner.optimize_lineup_slots(lineup)
+        if lineup.contest_name in STATE.contests:
+            multi_lineup_planner.recalculate_lineup(lineup, STATE.contests[lineup.contest_name])
+        STATE.sync_active_plan()
+        STATE.last_reallocation_plan = None
+        return jsonify(status="success", message=f"Optimized slots for late swap.", lineup=lineup.to_dict(), plan=plan.to_dict())
 
     if action == "clear":
         slot = next((s for s in lineup.slots if s.slot_name == data.get("slot_name")), None)
@@ -997,6 +1256,7 @@ def api_planner_edit_lineup():
     if action == "remove":
         plan.lineups.remove(lineup)
     else:
+        STATE.sync_active_plan()
         used = {s.card.card.card_id for l in plan.lineups if l is not lineup for s in l.slots if s.card}
         # Game-locked and manually locked slots are both preserved during rebuild.
         fixed: dict[str, str] = {}
@@ -1011,7 +1271,8 @@ def api_planner_edit_lineup():
                 not (STATE.live_states.get(c.card.athlete_key) and STATE.live_states[c.card.athlete_key].is_locked(STATE.simulated_time))]
         # Add fixed cards back into pool so the solver can keep them in their locked slots.
         fixed_ids = set(fixed.values())
-        fixed_card_map = {c.card.card_id: c for c in STATE.planner_cards if c.card.card_id in fixed_ids}
+        fixed_card_map = {s.card.card.card_id: s.card for s in lineup.slots
+                          if s.card and s.card.card.card_id in fixed_ids}
         pool_ids = {c.card.card_id for c in pool}
         for fid, fc in fixed_card_map.items():
             if fid not in pool_ids:
@@ -1025,6 +1286,8 @@ def api_planner_edit_lineup():
         cards = {c.card.card_id: c for c in pool}
         for slot, cid in zip(lineup.slots, result["cards"]):
             slot.card = cards[cid]
+        multi_lineup_planner.optimize_lineup_slots(lineup)
+        multi_lineup_planner.recalculate_lineup(lineup, STATE.contests[lineup.contest_name])
     STATE.sync_active_plan()
     STATE.last_reallocation_plan = None
     return jsonify(status="success", plan=plan.to_dict())
@@ -1146,12 +1409,18 @@ def api_planner_load():
 
         live_session = data.get("live_session")
         if live_session is not None:
+            valid_fields = set(live_lineup_manager.PlayerLiveState.__dataclass_fields__.keys())
             restored_players = {
-                player["athlete_key"]: live_lineup_manager.PlayerLiveState(**player)
+                player["athlete_key"]: live_lineup_manager.PlayerLiveState(
+                    **{k: v for k, v in player.items() if k in valid_fields}
+                )
                 for player in live_session["players"]
             }
             saved_time = live_session.get("simulated_time")
             restored_time = datetime.fromisoformat(saved_time) if saved_time else None
+            STATE.live_states.update(restored_players)
+            if restored_time:
+                STATE.simulated_time = restored_time
 
         # Reprice old plans from the current roster, never their saved DFF salaries.
         salary_migrated = data.get("salary_source") != "roster"
@@ -1179,32 +1448,57 @@ def api_planner_load():
         STATE.recompute_planner_cards()
 
         # Reconstruct plan and track missing cards
-        card_map = {c.card.card_id: c for c in STATE.planner_cards}
+        card_pool = {c.card.card_id: c for c in STATE.planner_cards}
+        claimed_ids: set[str] = set()
+        lineup_conflicts: dict[str, list[str]] = {}
         missing_cards_report: list[str] = []
         lineups: list[multi_lineup_planner.PlannerLineup] = []
 
-        for l_data in data.get("lineups", []):
-            slots: list[multi_lineup_planner.LineupSlotAssignment] = []
+        # First pass: collect slots with card data and sort by priority (locked first)
+        raw_lineups = data.get("lineups", [])
+        slots_to_resolve: list[tuple[int, dict[str, Any], dict[str, Any]]] = []
+        for l_data in raw_lineups:
             for s_data in l_data.get("slots", []):
-                card_data = s_data.get("card")
-                c = None
-                if card_data:
-                    cid = card_data.get("card_id")
-                    if cid in card_map:
-                        c = card_map[cid]
-                    else:
-                        pname = card_data.get("player_name", cid)
-                        missing_cards_report.append(f"{pname} (ID: {cid}) in {l_data.get('lineup_id')}")
+                if s_data.get("card"):
+                    prio = 0
+                    if l_data.get("is_locked"):
+                        prio -= 2
+                    if s_data.get("is_locked"):
+                        prio -= 1
+                    slots_to_resolve.append((prio, l_data, s_data))
+        slots_to_resolve.sort(key=lambda x: x[0])
+
+        resolved_slot_cards: dict[tuple[str, str], multi_lineup_planner.PlannerCard] = {}
+        for _, l_data, s_data in slots_to_resolve:
+            card_data = s_data.get("card")
+            c = resolve_card_for_slot(card_data, card_pool, claimed_ids)
+            lid = l_data.get("lineup_id", "")
+            sname = s_data.get("slot_name", "")
+            if c:
+                resolved_slot_cards[(lid, sname)] = c
+            else:
+                pname = card_data.get("player_name", card_data.get("card_id", "Unknown"))
+                pmult = card_data.get("multiplier", 1.0)
+                missing_cards_report.append(f"{pname} (ID: {card_data.get('card_id')}) in {lid}")
+                conf_msg = f"Conflict: Slot '{sname}' player '{pname}' ({pmult}x) is no longer available in current roster inventory."
+                lineup_conflicts.setdefault(lid, []).append(conf_msg)
+
+        for l_data in raw_lineups:
+            slots: list[multi_lineup_planner.LineupSlotAssignment] = []
+            lid = l_data.get("lineup_id", "")
+            for s_data in l_data.get("slots", []):
+                sname = s_data.get("slot_name", "")
+                c = resolved_slot_cards.get((lid, sname))
                 slots.append(
                     multi_lineup_planner.LineupSlotAssignment(
-                        slot_name=s_data["slot_name"],
+                        slot_name=sname,
                         slot_kind=s_data["slot_kind"],
                         card=c,
                         is_locked=bool(s_data.get("is_locked", False)),
                     )
                 )
             pl = multi_lineup_planner.PlannerLineup(
-                lineup_id=l_data["lineup_id"],
+                lineup_id=lid,
                 contest_name=l_data["contest_name"],
                 slots=slots,
                 is_locked=bool(l_data.get("is_locked", False)),
@@ -1226,17 +1520,18 @@ def api_planner_load():
                 multi_lineup_planner.recalculate_lineup(l, contest, card_usage)
                 if l.contest_benchmark > 0:
                     l.benchmark_percentage = round((l.total_projection / l.contest_benchmark) * 100, 1)
+            if l.lineup_id in lineup_conflicts:
+                for conf in lineup_conflicts[l.lineup_id]:
+                    if conf not in l.validation_errors:
+                        l.validation_errors.append(conf)
+                l.is_valid = False
 
         preserved_existing_lineups: list[multi_lineup_planner.PlannerLineup] = []
         for l_data in data.get("preserved_existing_lineups", []):
             p_slots: list[multi_lineup_planner.LineupSlotAssignment] = []
             for s_data in l_data.get("slots", []):
                 card_data = s_data.get("card")
-                c = None
-                if card_data:
-                    cid = card_data.get("card_id")
-                    if cid in card_map:
-                        c = card_map[cid]
+                c = resolve_card_for_slot(card_data, card_pool, claimed_ids) if card_data else None
                 p_slots.append(
                     multi_lineup_planner.LineupSlotAssignment(
                         slot_name=s_data["slot_name"],
@@ -1290,6 +1585,7 @@ def api_planner_load():
             STATE.live_states = restored_players
             STATE.dashboard_schedule = live_session.get("dashboard_schedule")
             STATE.simulated_time = restored_time
+            STATE.recompute_planner_cards()
         STATE.last_reallocation_plan = None
 
         msg = "Plan loaded successfully."
@@ -1308,6 +1604,76 @@ def api_planner_load():
         return jsonify({"status": "error", "message": f"Failed to load plan: {exc}"}), 500
 
 
+@app.post("/api/planner/reset_week")
+def api_planner_reset_week():
+    upload = request.files.get("roster_file")
+    roster_msg = ""
+    if upload:
+        try:
+            stream, err = _read_upload(upload, "roster")
+            if err:
+                return jsonify({"status": "error", "message": err}), 400
+            cards = multi_lineup_planner.parse_roster_cards(stream)
+            if not cards:
+                raise ValueError("The roster contains no cards.")
+            roster_path = STATE.root_dir / "data" / "raw" / "My_roster.csv"
+            roster_path.parent.mkdir(parents=True, exist_ok=True)
+            temporary = roster_path.with_suffix(".tmp")
+            temporary.write_text(stream.getvalue(), encoding="utf-8")
+            temporary.replace(roster_path)
+            STATE.roster_cards = cards
+            roster_msg = f" Updated roster with {len(cards)} cards."
+        except Exception as exc:
+            return jsonify({"status": "error", "message": f"Roster upload error: {exc}"}), 400
+
+    # Archive existing plan if one exists
+    if STATE.active_plan:
+        try:
+            now_stamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+            archive_path = STATE.plans_dir / f"archived_plan_{now_stamp}.json"
+            payload = STATE.active_plan.to_dict()
+            payload["live_session"] = {
+                "players": [asdict(player) for player in STATE.live_states.values()],
+                "dashboard_schedule": STATE.dashboard_schedule,
+                "simulated_time": STATE.simulated_time.isoformat() if STATE.simulated_time else None,
+            }
+            archive_path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+        except Exception:
+            pass
+
+    # Clear plan, reset live states, dashboard schedule, simulated time
+    STATE.active_plan = None
+    STATE.dashboard_schedule = None
+    STATE.simulated_time = None
+    STATE.last_reallocation_plan = None
+
+    # Reset live states to clean UPCOMING with current projections, then restore Thursday scores
+    STATE.live_states = {}
+    STATE.load_thursday_scores()
+    STATE.recompute_planner_cards()
+
+    # Clear saved latest_plan.json so reloads or restarts start fresh
+    latest_plan_file = STATE.plans_dir / "latest_plan.json"
+    if latest_plan_file.exists():
+        try:
+            latest_plan_file.unlink()
+        except OSError:
+            pass
+
+    matched = [c for c in STATE.planner_cards if c.is_matched]
+    eligible = [c for c in STATE.planner_cards if c.is_eligible]
+
+    return jsonify({
+        "status": "success",
+        "message": f"Workspace reset for new week.{roster_msg} Ready to generate lineups.",
+        "roster_count": len(STATE.roster_cards),
+        "matched_count": len(matched),
+        "eligible_count": len(eligible),
+        "snapshot": STATE.snapshot.to_dict() if STATE.snapshot else None,
+        "active_plan": None,
+    })
+
+
 @app.get("/api/check_update")
 def api_check_update():
     res = planner_update_check.run_weekly_update_check(store_dir=str(STATE.root_dir / "data" / "snapshots"), persist=True)
@@ -1323,6 +1689,74 @@ def api_check_update():
 def api_requirements():
     reqs = payout_evaluator.get_probabilistic_ranking_requirements()
     return jsonify({"status": "success", "requirements": reqs})
+
+
+# ---------------------------------------------------------------------------
+# Market Listing Advisor REST API Routes
+# ---------------------------------------------------------------------------
+
+
+@app.get("/api/market/advisor")
+def api_market_advisor():
+    core_only = request.args.get("core_only", "true").lower() != "false"
+    try:
+        min_premium = float(request.args.get("min_premium", 25.0))
+    except ValueError:
+        min_premium = 25.0
+    try:
+        min_spread = float(request.args.get("min_spread", 1.50))
+    except ValueError:
+        min_spread = 1.50
+    force_refresh = request.args.get("force_refresh", "false").lower() == "true"
+
+    cards = [c.to_dict() for c in STATE.roster_cards]
+    if not cards:
+        roster_path = STATE.root_dir / "data" / "raw" / "My_roster.csv"
+        if roster_path.exists():
+            try:
+                parsed = multi_lineup_planner.parse_roster_cards(io.StringIO(roster_path.read_text(encoding="utf-8")))
+                cards = [c.to_dict() for c in parsed]
+            except Exception:
+                pass
+
+    if not cards:
+        return jsonify({
+            "status": "error",
+            "message": "No roster cards uploaded yet. Upload your roster CSV to analyze market listing opportunities."
+        }), 400
+
+    try:
+        eval_result = market_advisor.evaluate_roster_opportunities(
+            cards,
+            core_only=core_only,
+            min_premium_pct=min_premium,
+            min_spread=min_spread,
+            force_refresh=force_refresh,
+        )
+        return jsonify({
+            "status": "success",
+            **eval_result,
+        })
+    except Exception as exc:
+        return jsonify({"status": "error", "message": str(exc)}), 500
+
+
+@app.get("/api/market/player-floor")
+def api_market_player_floor():
+    player = request.args.get("player")
+    if not player:
+        return jsonify({"status": "error", "message": "Player name required"}), 400
+    mult_str = request.args.get("mult")
+    try:
+        mult = float(mult_str) if mult_str else None
+    except ValueError:
+        mult = None
+    is_core = request.args.get("is_core", "true").lower() != "false"
+    force_refresh = request.args.get("force_refresh", "false").lower() == "true"
+    floor_data = market_advisor.get_live_market_floor(
+        player, target_multiplier=mult, is_core=is_core, force_refresh=force_refresh
+    )
+    return jsonify({"status": "success", "data": floor_data})
 
 
 # ---------------------------------------------------------------------------
@@ -1393,6 +1827,9 @@ def api_live_state():
                         "is_locked": is_locked,
                         "game_status": game_status,
                         "total_projected_points": round(total_pts, 2),
+                        "opp": (p_state.opp if p_state else "") or getattr(c, "opp", "") or "",
+                        "game_date": (p_state.game_date if p_state else "") or getattr(c, "game_date", "") or "",
+                        "kickoff_time": (p_state.kickoff_time if p_state else "") or getattr(c, "kickoff_time", "") or "",
                     })
                 else:
                     slots_data.append({
@@ -1406,6 +1843,9 @@ def api_live_state():
                         "is_locked": False,
                         "game_status": "UPCOMING",
                         "total_projected_points": 0.0,
+                        "opp": "",
+                        "game_date": "",
+                        "kickoff_time": "",
                     })
 
             p_cash = ev.p_cash if ev else 0.0
@@ -1610,6 +2050,7 @@ def api_live_update_player_state():
     if "game_clock" in data:
         p_state.game_clock = str(data["game_clock"])
 
+    STATE.recompute_planner_cards()
     return jsonify({"status": "success", "player_state": p_state.to_dict()})
 
 
@@ -1694,6 +2135,7 @@ def api_live_upload_scores_csv():
         states = live_lineup_manager.parse_live_scores_csv(upload.stream)
         for s in states:
             STATE.live_states[s.athlete_key] = s
+        STATE.recompute_planner_cards()
         return jsonify({
             "status": "success",
             "message": f"Updated live state for {len(states)} players",

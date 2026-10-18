@@ -1503,7 +1503,7 @@
             </div>
             <div class="modal-body">
                 <p id="swap-feedback" role="status" aria-live="polite"></p><label for="swap-search">Find a replacement</label>
-                <input type="text" id="swap-search" placeholder="Search eligible owned cards..." oninput="filterSwapCandidates()" style="margin-bottom: 0.75rem;">
+                <input type="text" id="swap-search" placeholder="Search eligible owned cards..." oninput="filterSwapCandidates()" onkeydown="handleSwapSearchKey(event)" style="margin-bottom: 0.75rem;">
                 <div class="table-wrap" style="max-height: 360px;">
                     <table>
                         <thead><tr><th>Player</th><th>Pos</th><th>Team</th><th class="numeric">Salary</th><th class="numeric">Projection</th><th class="numeric">Change</th><th class="numeric">Salary left</th><th>Action</th></tr></thead>
@@ -2020,21 +2020,20 @@
         const mixEl = document.getElementById('entry-mix');
         const select = document.getElementById('add-entry-contest');
         if (!mixEl) return;
-        const limits = {};
-        document.querySelectorAll('.contest-selected').forEach(el => { limits[el.dataset.contest] = el.checked; });
+        const contestLimits = {};
         document.querySelectorAll('.contest-limit').forEach(el => {
-            if (limits[el.dataset.contest] === false) return;
-            limits[el.dataset.contest] = Number(el.value);
+            const contestName = el.dataset.contest;
+            const maxVal = Number(el.max) || (appState.contests && appState.contests[contestName]?.default_entry_limit) || Number(el.value) || 5;
+            contestLimits[contestName] = maxVal;
         });
         const counts = {};
         lineups.forEach(l => { counts[l.contest_name] = (counts[l.contest_name] || 0) + 1; });
-        // Only selected tiers with a positive count can receive a new entry.
-        const contestNames = Object.keys(limits).filter(name => limits[name] !== false && Number(limits[name]) > 0);
+        const contestNames = Object.keys(contestLimits);
         mixEl.innerHTML = '';
         contestNames.forEach(name => {
             const badge = document.createElement('span');
             badge.className = `badge ${getContestBadgeClass(name)}`;
-            badge.textContent = `${name} ${counts[name] || 0}/${limits[name] || 0}`;
+            badge.textContent = `${name} ${counts[name] || 0}/${contestLimits[name]}`;
             mixEl.appendChild(badge);
         });
         if (!select) return;
@@ -2043,12 +2042,11 @@
         contestNames.forEach(name => {
             const opt = document.createElement('option');
             opt.value = name;
-            opt.textContent = `${name} (${counts[name] || 0}/${limits[name] || 0})`;
-            opt.disabled = (counts[name] || 0) >= (limits[name] || 0);
+            opt.textContent = `${name} (${counts[name] || 0}/${contestLimits[name]})`;
+            opt.disabled = (counts[name] || 0) >= contestLimits[name];
             select.appendChild(opt);
         });
         if ([...select.options].some(o => o.value === previous)) select.value = previous;
-        // A selected tier makes the picker usable even before the first plan exists.
         select.disabled = select.options.length === 0;
     }
 
@@ -2521,28 +2519,13 @@
             notify('Select a contest tier before adding an entry.', 'error');
             return;
         }
-        const contestDistribution = {};
-        for (const checkbox of document.querySelectorAll('.contest-selected')) {
-            const name = checkbox.dataset.contest;
-            const input = [...document.querySelectorAll('.contest-limit')].find(el => el.dataset.contest === name);
-            if (input && !input.reportValidity()) return;
-            contestDistribution[name] = checkbox.checked && input ? Number(input.value) : 0;
-        }
-        if (!contestDistribution[contestName]) {
-            notify(`Set the ${contestName} entry count above zero before adding an entry.`, 'error');
-            return;
-        }
         beginRequest(`Adding an empty ${contestName} entry`);
         const { ok, data } = await postJson('/api/planner/edit_lineup', {
             action: 'add',
             contest_name: contestName,
-            entry_limit: contestDistribution[contestName],
-            contest_distribution: contestDistribution,
         });
         endRequest();
         if (!ok) { notify(data.message || 'Could not add that entry.', 'error'); return; }
-        // Keep the controls the user set; do not snap the limits back to the plan.
-        appState.contestsInitialized = true;
         renderPlan(data.plan);
         markUnsaved();
         notify(`${data.message} Fill its slots with Swap or Move.`, 'success');
@@ -2772,9 +2755,17 @@
         if (appState.busy) { setStatus('Wait for the running request to finish.', 'pending'); return; }
         appState.swapContext = { lineupId, slotName, slotKind };
         document.getElementById('swap-modal-title').textContent = `Swap ${slotName} (${slotKind}) in ${lineupDisplayName(lineupId)}`;
-        document.getElementById('swap-search').value = '';
+        const searchInput = document.getElementById('swap-search');
+        if (searchInput) searchInput.value = '';
         appState.swapCandidates = [];
         openModal('swap-modal');
+        if (searchInput) {
+            searchInput.focus();
+            setTimeout(() => {
+                searchInput.focus();
+                if (typeof searchInput.select === 'function') searchInput.select();
+            }, 0);
+        }
         document.getElementById('swap-feedback').textContent = 'Finding available replacements that fit this lineup...';
         try {
             const res = await fetch('/api/planner/candidates?' + new URLSearchParams({lineup_id: lineupId, slot_name: slotName}));
@@ -2784,6 +2775,14 @@
             renderSwapCandidates();
         } catch (error) {
             document.getElementById('swap-feedback').textContent = `${error.message} No card was changed.`;
+        }
+    }
+
+    function handleSwapSearchKey(event) {
+        if (event.key === 'Enter') {
+            event.preventDefault();
+            const firstBtn = document.querySelector('#swap-candidates-tbody button');
+            if (firstBtn) firstBtn.click();
         }
     }
 
@@ -3237,7 +3236,16 @@
     }
 
     function openModal(id) {
-        document.getElementById(id).style.display = 'flex';
+        const modal = document.getElementById(id);
+        if (!modal) return;
+        modal.style.display = 'flex';
+        const input = modal.querySelector('input[type="text"]:not([type="hidden"]), input:not([type="hidden"])');
+        if (input) {
+            setTimeout(() => {
+                input.focus();
+                if (typeof input.select === 'function') input.select();
+            }, 0);
+        }
     }
 
     function closeModal(id) {

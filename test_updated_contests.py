@@ -68,7 +68,7 @@ class UpdatedContestsTests(unittest.TestCase):
             "Volcano": {"min": 25000, "max": 52000, "entries": 6, "slots": 6},
             "Flamethrower": {"min": 30000, "max": 62000, "entries": 6, "slots": 6},
             "Scorcher": {"min": 20000, "max": 40000, "entries": 5, "slots": 5},
-            "Primetime Pyro": {"min": 0, "max": 48000, "entries": 6, "slots": 6},
+            "Primetime Pyro": {"min": 0, "max": 48000, "entries": 3, "slots": 6},
             "Flex Appeal": {"min": 25000, "max": 52000, "entries": 6, "slots": 6},
         }
 
