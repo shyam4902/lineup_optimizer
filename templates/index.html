@@ -868,7 +868,7 @@
                 <div class="contest-choice">
                     <label><input type="checkbox" class="contest-selected" data-contest="{{ name }}" checked> {{ name }}</label>
                     <p>${{ '{:,}'.format(cfg.minimum_salary) }} to ${{ '{:,}'.format(cfg.maximum_salary) }} · {{ cfg.slots|length }} players</p>
-                    <label class="entry-limit">Up to <input aria-label="{{ name }} entry limit" class="contest-limit" data-contest="{{ name }}" type="number" min="0" max="{{ cfg.default_entry_limit }}" value="{{ cfg.default_entry_limit }}"> entries</label>
+                    <label class="entry-limit">Up to <input aria-label="{{ name }} entry limit" class="contest-limit" data-contest="{{ name }}" type="number" min="0" max="100" value="{{ cfg.default_entry_limit }}"> entries</label>
                 </div>
             {% endfor %}
             </div>
@@ -2020,20 +2020,17 @@
         const mixEl = document.getElementById('entry-mix');
         const select = document.getElementById('add-entry-contest');
         if (!mixEl) return;
-        const contestLimits = {};
-        document.querySelectorAll('.contest-limit').forEach(el => {
-            const contestName = el.dataset.contest;
-            const maxVal = Number(el.max) || (appState.contests && appState.contests[contestName]?.default_entry_limit) || Number(el.value) || 5;
-            contestLimits[contestName] = maxVal;
-        });
         const counts = {};
         lineups.forEach(l => { counts[l.contest_name] = (counts[l.contest_name] || 0) + 1; });
-        const contestNames = Object.keys(contestLimits);
+        const contestNames = [];
+        document.querySelectorAll('.contest-limit').forEach(el => {
+            contestNames.push(el.dataset.contest);
+        });
         mixEl.innerHTML = '';
         contestNames.forEach(name => {
             const badge = document.createElement('span');
             badge.className = `badge ${getContestBadgeClass(name)}`;
-            badge.textContent = `${name} ${counts[name] || 0}/${contestLimits[name]}`;
+            badge.textContent = `${name}: ${counts[name] || 0}`;
             mixEl.appendChild(badge);
         });
         if (!select) return;
@@ -2042,8 +2039,8 @@
         contestNames.forEach(name => {
             const opt = document.createElement('option');
             opt.value = name;
-            opt.textContent = `${name} (${counts[name] || 0}/${contestLimits[name]})`;
-            opt.disabled = (counts[name] || 0) >= contestLimits[name];
+            opt.textContent = `${name} (${counts[name] || 0} entered)`;
+            opt.disabled = false;
             select.appendChild(opt);
         });
         if ([...select.options].some(o => o.value === previous)) select.value = previous;

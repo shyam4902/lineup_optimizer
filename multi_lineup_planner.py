@@ -71,6 +71,9 @@ class PlannerCard:
     is_overridden: bool = False
     is_eligible: bool = True
     ineligibility_reason: str | None = None
+    opp: str = ""
+    game_date: str = ""
+    kickoff_time: str = ""
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -93,6 +96,9 @@ class PlannerCard:
             "collection": self.card.collection,
             "collection_group": self.card.collection_group,
             "source_row": self.card.source_row,
+            "opp": self.opp,
+            "game_date": self.game_date,
+            "kickoff_time": self.kickoff_time,
         }
 
 
@@ -225,6 +231,7 @@ def parse_roster_cards(source: Any) -> list[OwnedCard]:
     status_col = next((header_map[k] for k in ("cardstatus", "status") if k in header_map), None)
     rarity_col = next((header_map[k] for k in ("rarity",) if k in header_map), None)
     collection_col = next((header_map[k] for k in ("collection", "cardcollection") if k in header_map), None)
+    expires_col = next((header_map[k] for k in ("expires", "expiration", "expiry") if k in header_map), None)
 
     if not name_col or not pos_col or not mult_col or not sal_col:
         raise ValueError(f"Roster missing required columns. Found headers: {headers}")
@@ -251,6 +258,7 @@ def parse_roster_cards(source: Any) -> list[OwnedCard]:
 
         status = str(row.get(status_col, "Active") if status_col else "Active").strip()
         rarity = str(row.get(rarity_col, "") if rarity_col else "").strip()
+        raw_expires = str(row.get(expires_col, "") if expires_col else "").strip()
         raw_collection = str(row.get(collection_col, "") if collection_col else "").strip()
         col_lower = raw_collection.lower()
         if "primetime" in col_lower:
@@ -276,6 +284,7 @@ def parse_roster_cards(source: Any) -> list[OwnedCard]:
                 status=status,
                 source_row=source_row,
                 rarity=rarity,
+                expires=raw_expires,
                 collection=raw_collection,
                 collection_group=col_group,
             )
@@ -413,6 +422,29 @@ def join_cards_with_projections(
         elif card.roster_salary <= 0:
             is_eligible = False
             reason = "Roster salary is missing, zero or negative"
+        elif card.expires:
+            exp_clean = card.expires.strip().split("T")[0]
+            today_clean = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+            if exp_clean and exp_clean != "N/A" and exp_clean < today_clean:
+                is_eligible = False
+                reason = f"Card expired on {card.expires}"
+
+        opp_val = getattr(matched_proj, "opp", "") or ""
+        game_date_val = getattr(matched_proj, "game_date", "") or ""
+        kickoff_val = getattr(matched_proj, "kickoff_time", "") or ""
+
+        if not kickoff_val:
+            try:
+                import schedule_manager
+                team_sched = schedule_manager.build_team_schedule_map().get(card.team)
+                if team_sched:
+                    kickoff_val = team_sched.get("kickoff_time", "")
+                    if not game_date_val:
+                        game_date_val = team_sched.get("game_date", "")
+                    if not opp_val:
+                        opp_val = team_sched.get("opp", "")
+            except Exception:
+                pass
 
         planner_cards.append(
             PlannerCard(
@@ -425,9 +457,25 @@ def join_cards_with_projections(
                 is_overridden=is_overridden,
                 is_eligible=is_eligible,
                 ineligibility_reason=reason,
+                opp=opp_val,
+                game_date=game_date_val,
+                kickoff_time=kickoff_val,
             )
         )
     return planner_cards
+
+
+def optimize_lineup_slots(lineup: PlannerLineup) -> PlannerLineup:
+    """Rearrange existing cards across slots in this lineup for late-swap flexibility.
+
+    Earliest kickoff players take specific position slots (QB, RB, WR, TE),
+    while latest kickoff players take flexible slots (Flex, Superflex).
+    Total salary, remaining salary, total projection, and athlete card IDs are unchanged.
+    """
+    import schedule_manager
+    lineup.slots = schedule_manager.order_lineup_slots_for_late_swap(lineup.slots)
+    return lineup
+
 
 
 # Explicit designated Primetime game IDs for Week 1 (Wednesday, Thursday, Sunday night, and Monday night)
@@ -575,6 +623,19 @@ def validate_lineup(
                     f"Primetime collection card '{card.card.player_name}' can only enter Primetime Pyro."
                 )
 
+    # Flamethrower rule: Sunday only
+    if contest.name == "Flamethrower":
+        for card in assigned_cards:
+            gdate = getattr(card, "game_date", "")
+            if gdate:
+                try:
+                    if datetime.fromisoformat(gdate).weekday() != 6:
+                        errors.append(
+                            f"Contest 'Flamethrower' is Sunday only, but '{card.card.player_name}' plays on {gdate}."
+                        )
+                except Exception:
+                    pass
+
     # Note: Weekly game eligibility restrictions for Primetime Pyro have been relaxed.
 
 
@@ -709,6 +770,12 @@ def compute_contest_benchmark(
     for sname, skind in slots:
         allowed = allowed_positions_for_slot(skind)
         for cid, pcard in card_dict.items():
+            if contest.name == "Flamethrower" and getattr(pcard, "game_date", ""):
+                try:
+                    if datetime.fromisoformat(pcard.game_date).weekday() != 6:
+                        continue
+                except Exception:
+                    pass
             if pcard.card.position in allowed:
                 x[(cid, sname)] = pulp.LpVariable(f"bx_{cid}_{sname}", cat=pulp.LpBinary)
 
@@ -1091,8 +1158,6 @@ def is_plan_fully_qualifying(
             return False, f"Contest '{cname}' is not currently enabled."
         cfg = contests[cname]
         contest_counts[cname] = contest_counts.get(cname, 0) + 1
-        if contest_counts[cname] > cfg.default_entry_limit:
-            return False, f"Contest '{cname}' exceeds entry limit ({contest_counts[cname]} > {cfg.default_entry_limit})."
 
         is_valid, errors = validate_lineup(l, cfg, card_usage_map, primetime_teams=primetime_teams)
         if not is_valid:
@@ -1175,9 +1240,9 @@ def solve_multi_lineup_allocation(
     for cname, cfg in active_contests.items():
         limit = cfg.default_entry_limit or 5
         if contest_distribution:
-            # Respect user specified count capped strictly at contest limit
+            # Respect user specified count
             requested = contest_distribution.get(cname, 0)
-            count = min(requested, limit)
+            count = requested
         else:
             # Auto-mix mode: allocate candidate slots up to limit
             count = limit
@@ -1263,6 +1328,13 @@ def solve_multi_lineup_allocation(
                 is_pt_collection = getattr(pcard.card, "collection_group", "Core") == "Primetime"
                 if is_pt_collection and cname != "Primetime Pyro":
                     continue
+                # Flamethrower rule: Sunday only
+                if cname == "Flamethrower" and getattr(pcard, "game_date", ""):
+                    try:
+                        if datetime.fromisoformat(pcard.game_date).weekday() != 6:
+                            continue
+                    except Exception:
+                        pass
                 var = pulp.LpVariable(f"x_{cid}_{lid}_{sname}", cat=pulp.LpBinary)
 
                 x[(cid, lid, sname)] = var
@@ -1679,11 +1751,14 @@ def solve_multi_lineup_allocation(
                 )
             )
 
+        import schedule_manager
+        ordered_slots = schedule_manager.order_lineup_slots_for_late_swap(slot_assignments)
+
         c_bench = bench_scores.get(cname, 0.0)
         pl = PlannerLineup(
             lineup_id=lid,
             contest_name=cname,
-            slots=slot_assignments,
+            slots=ordered_slots,
             is_locked=lid in locked_lineup_ids,
             contest_benchmark=c_bench,
         )
@@ -1931,9 +2006,7 @@ def add_empty_lineup(
     if not (contest.enabled and contest.eligible):
         return False, f"Contest '{contest_name}' is not open for entry.", None
 
-    limit = contest.default_entry_limit
-    if entry_limit is not None:
-        limit = min(limit, entry_limit) if limit is not None else entry_limit
+    limit = entry_limit
     existing = [l for l in plan.lineups if l.contest_name == contest_name]
     if limit is not None and len(existing) >= limit:
         return False, f"Contest '{contest_name}' already has {len(existing)} of {limit} allowed entries.", None

@@ -1056,17 +1056,20 @@ class V1Packet2ManualConstructionTests(unittest.TestCase):
         self.assertFalse(draft.is_valid)
         self.assertEqual(draft.total_salary, 0)
 
-        # A sixth entry is beyond the cap and must not mutate the plan.
-        before = self._snapshot(self.test_state.active_plan)
-        res = self.client.post("/api/planner/edit_lineup", json={"action": "add", "contest_name": "Scorcher"})
-        self.assertEqual(res.status_code, 400)
-        self.assertIn("allowed entries", res.get_json()["message"])
-        self.assertEqual(self._snapshot(self.test_state.active_plan), before)
+        # Additional manual entries beyond default limit succeed without being blocked.
+        res_sixth = self.client.post("/api/planner/edit_lineup", json={"action": "add", "contest_name": "Scorcher"})
+        self.assertEqual(res_sixth.status_code, 200, res_sixth.get_json())
+        self.assertEqual(len(self.test_state.active_plan.lineups), 6)
+
+        # An explicit entry_limit passed in the request is enforced when provided.
+        res_limited = self.client.post("/api/planner/edit_lineup", json={"action": "add", "contest_name": "Scorcher", "entry_limit": 6})
+        self.assertEqual(res_limited.status_code, 400)
+        self.assertIn("allowed entries", res_limited.get_json()["message"])
 
         # Adding a contest that wasn't in the initial generation succeeds.
         res = self.client.post("/api/planner/edit_lineup", json={"action": "add", "contest_name": "Volcano"})
         self.assertEqual(res.status_code, 200, res.get_json())
-        self.assertEqual(len(self.test_state.active_plan.lineups), 6)
+        self.assertEqual(len(self.test_state.active_plan.lineups), 7)
 
         # An unknown or invalid contest is rejected without mutation.
         snap_after_volcano = self._snapshot(self.test_state.active_plan)
@@ -1074,21 +1077,36 @@ class V1Packet2ManualConstructionTests(unittest.TestCase):
         self.assertEqual(res.status_code, 400)
         self.assertEqual(self._snapshot(self.test_state.active_plan), snap_after_volcano)
 
-    def test_primetime_pyro_entry_cap_is_three(self):
-        self.client.post("/api/planner/generate", json={"contest_distribution": {"Primetime Pyro": 1}})
-        self.assertEqual(len(self.test_state.active_plan.lineups), 1)
+    def test_can_add_more_infernos_and_flamethrowers_beyond_initial_selection(self):
+        # Generate 1 Inferno and 1 Flamethrower
+        self.client.post("/api/planner/generate", json={"contest_distribution": {"Inferno": 1, "Flamethrower": 1}})
+        self.assertEqual(len(self.test_state.active_plan.lineups), 2)
 
-        # Primetime Pyro allows at most 3 entries; add 2 more drafts up to 3.
-        for expected_count in (2, 3):
-            res = self.client.post("/api/planner/edit_lineup", json={"action": "add", "contest_name": "Primetime Pyro"})
-            self.assertEqual(res.status_code, 200, res.get_json())
-            self.assertEqual(len(self.test_state.active_plan.lineups), expected_count)
-
-        # A 4th entry exceeds the cap of 3 and must be rejected.
-        res = self.client.post("/api/planner/edit_lineup", json={"action": "add", "contest_name": "Primetime Pyro"})
-        self.assertEqual(res.status_code, 400)
-        self.assertIn("allowed entries", res.get_json()["message"])
+        # Adding more Infernos beyond initial selection succeeds
+        res_inf2 = self.client.post("/api/planner/edit_lineup", json={"action": "add", "contest_name": "Inferno"})
+        self.assertEqual(res_inf2.status_code, 200, res_inf2.get_json())
         self.assertEqual(len(self.test_state.active_plan.lineups), 3)
+
+        # Add more Infernos beyond master default limit of 8
+        for _ in range(8):
+            res = self.client.post("/api/planner/edit_lineup", json={"action": "add", "contest_name": "Inferno"})
+            self.assertEqual(res.status_code, 200)
+
+        # We now have 10 Infernos in the plan (1 initial + 1 + 8)
+        self.assertEqual(sum(1 for l in self.test_state.active_plan.lineups if l.contest_name == "Inferno"), 10)
+
+        # Add more Flamethrowers beyond master default limit of 6
+        for _ in range(6):
+            res = self.client.post("/api/planner/edit_lineup", json={"action": "add", "contest_name": "Flamethrower"})
+            self.assertEqual(res.status_code, 200)
+
+        # We now have 7 Flamethrowers (1 initial + 6 added)
+        self.assertEqual(sum(1 for l in self.test_state.active_plan.lineups if l.contest_name == "Flamethrower"), 7)
+
+    def test_primetime_pyro_default_entry_limit(self):
+        # Master contest default_entry_limit for Primetime Pyro is 3
+        contest = self.test_state.contests["Primetime Pyro"]
+        self.assertEqual(contest.default_entry_limit, 3)
 
     def test_generation_does_not_restrict_subsequent_manual_additions(self):
         # User starts with just 1 Scorcher from the batch generator.
@@ -1099,7 +1117,7 @@ class V1Packet2ManualConstructionTests(unittest.TestCase):
         res_volcano = self.client.post("/api/planner/edit_lineup", json={"action": "add", "contest_name": "Volcano"})
         self.assertEqual(res_volcano.status_code, 200, res_volcano.get_json())
 
-        # User decides to add another Scorcher lineup beyond the initial generator count - should succeed up to contest limit (5).
+        # User decides to add another Scorcher lineup beyond the initial generator count - should succeed.
         res_scorcher2 = self.client.post("/api/planner/edit_lineup", json={"action": "add", "contest_name": "Scorcher"})
         self.assertEqual(res_scorcher2.status_code, 200, res_scorcher2.get_json())
 

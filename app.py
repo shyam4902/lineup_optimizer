@@ -870,10 +870,10 @@ def api_planner_generate():
     if contest_dist is not None:
         if not isinstance(contest_dist, dict) or not contest_dist or any(
             name not in STATE.contests or not STATE.contests[name].enabled or not STATE.contests[name].eligible or
-            isinstance(count, bool) or not isinstance(count, int) or count < 0 or count > STATE.contests[name].default_entry_limit
+            isinstance(count, bool) or not isinstance(count, int) or count < 0
             for name, count in contest_dist.items()
         ) or not any(contest_dist.values()):
-            return jsonify(status="error", message="Select at least one contest and use its allowed entry limit."), 400
+            return jsonify(status="error", message="Select at least one contest and specify positive entry counts."), 400
         if contest_dist.get("Wildfire") and contest_dist.get("Volcano"):
             return jsonify(status="error", message="Wildfire and Volcano refer to the same contest. Select one."), 400
         started_lineups = {lineup_id for lineup_id, _ in game_locked_placements}
@@ -1135,8 +1135,6 @@ def _plan_for_manual_entry(data: dict[str, Any], plan):
                 return plan, None, f"'{name}' is not an available contest."
             if isinstance(count, bool) or not isinstance(count, int) or count < 0:
                 return plan, None, "Selected entry counts must be whole numbers."
-            if cfg.default_entry_limit is not None and count > cfg.default_entry_limit:
-                return plan, None, f"{name} allows at most {cfg.default_entry_limit} entries."
             if count > 0:
                 selected[name] = count
         if contest_name not in requested:
@@ -1145,11 +1143,6 @@ def _plan_for_manual_entry(data: dict[str, Any], plan):
             return plan, None, f"Select at least one {contest_name} entry before adding a draft."
         if selected.get("Wildfire") and selected.get("Volcano"):
             return plan, None, "Wildfire and Volcano refer to the same contest. Select one."
-        if plan is not None and any(
-            count > selected.get(name, 0)
-            for name, count in Counter(l.contest_name for l in plan.lineups).items()
-        ):
-            return plan, None, "Selected limits must include your existing entries. Remove entries before lowering their limits."
 
     entry_limit = data.get("entry_limit")
     if entry_limit is not None and selected and entry_limit != selected[contest_name]:
@@ -1160,8 +1153,6 @@ def _plan_for_manual_entry(data: dict[str, Any], plan):
     if entry_limit is not None:
         if isinstance(entry_limit, bool) or not isinstance(entry_limit, int) or entry_limit < 1:
             return plan, None, f"Select at least one {contest_name} entry before adding a draft."
-        if contest.default_entry_limit is not None and entry_limit > contest.default_entry_limit:
-            return plan, None, f"{contest_name} allows at most {contest.default_entry_limit} entries."
 
     if plan is None:
         if not selected:
