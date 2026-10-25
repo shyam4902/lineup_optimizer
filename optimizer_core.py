@@ -589,6 +589,12 @@ def _result_lineup(cards: Sequence[NormalizedCard], slots: Sequence[_Slot], proj
     rows: list[dict[str, Any]] = []
     for slot, card in zip(slots, cards):
         projection = projections[card.card_row_id]
+        src_vals = projection.source_values if isinstance(projection.source_values, Mapping) else {}
+        opp = str(src_vals.get("opp") or src_vals.get("opponent") or "").strip()
+        kickoff_time = str(src_vals.get("kickoff") or src_vals.get("kickoff_time") or "").strip()
+        game_date = str(src_vals.get("game_date") or src_vals.get("date") or "").strip()
+        time_display = kickoff_time or game_date or ""
+
         rows.append({
             "slot": slot.label,
             "player_name": card.display_name,
@@ -602,6 +608,10 @@ def _result_lineup(cards: Sequence[NormalizedCard], slots: Sequence[_Slot], proj
             "raw_projection": projection.raw_projection,
             "adjusted_projection": projection.raw_projection * card.multiplier,
             "visible_duplicate_count": card.visible_duplicate_count,
+            "opp": opp,
+            "kickoff_time": kickoff_time,
+            "game_date": game_date,
+            "time_display": time_display,
         })
     return rows
 

@@ -160,22 +160,35 @@ class PlannerAppState:
 
     def load_thursday_scores(self) -> None:
         data_dir = self.root_dir / "data"
-        scores_candidates = sorted(
-            list(data_dir.glob("week*_thursday_scores.csv")),
-            key=lambda p: p.name,
-            reverse=True,
-        )
-        if not scores_candidates and (data_dir / "thursday_scores.csv").exists():
-            scores_candidates = [data_dir / "thursday_scores.csv"]
-        if not self.isolated:
-            opt_data = self.root_dir.parent / "lineup_optimizer" / "data"
-            scores_candidates.extend(
-                sorted(
-                    list(opt_data.glob("week*_thursday_scores.csv")),
-                    key=lambda p: p.name,
-                    reverse=True,
-                )
-            )
+        target_week = None
+        if self.snapshot and getattr(self.snapshot, "week", None):
+            target_week = self.snapshot.week
+        else:
+            try:
+                import schedule_manager
+                m = schedule_manager.build_team_schedule_map(target_time=self.simulated_time)
+                for info in m.values():
+                    if info.get("week"):
+                        target_week = int(info["week"])
+                        break
+            except Exception:
+                pass
+            if not target_week:
+                proj_candidates = sorted(list((self.root_dir / "data" / "projections").glob("DFF_NFL_cheatsheet_*.csv")), reverse=True)
+                if proj_candidates:
+                    try:
+                        import pandas as pd
+                        pdf = pd.read_csv(proj_candidates[0], nrows=5)
+                        if "week" in pdf.columns:
+                            target_week = int(pdf["week"].iloc[0])
+                    except Exception:
+                        pass
+        if target_week:
+            scores_candidates = [data_dir / f"week{target_week}_thursday_scores.csv"]
+            if not self.isolated:
+                scores_candidates.append(self.root_dir.parent / "lineup_optimizer" / "data" / f"week{target_week}_thursday_scores.csv")
+        else:
+            scores_candidates = []
         for sc_path in scores_candidates:
             if sc_path.exists():
                 try:

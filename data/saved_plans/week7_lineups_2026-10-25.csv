@@ -1,0 +1,62 @@
+Lineup ID,Contest,Slot,Player,Position,Team,Multiplier,Weekly Salary,Raw Projection,Adjusted Projection,Card ID,Lineup Total Salary,Lineup Projected Score,Estimated Finish Tier,Estimated Payout ($),Lineup Status
+inferno_1,Inferno,QB,Caleb Williams,QB,CHI,1.40x,8680,25.12,35.17,card_53_calebwilliams,61300,185.0,Top200,20.0,Valid
+inferno_1,Inferno,RB,Bucky Irving,RB,TB,1.00x,6200,15.5,15.5,card_285_buckyirving,61300,185.0,Top200,20.0,Valid
+inferno_1,Inferno,RB2,Rhamondre Stevenson,RB,NE,1.40x,8400,22.5,31.5,card_178_rhamondrestevenson,61300,185.0,Top200,20.0,Valid
+inferno_1,Inferno,WR,Zay Flowers,WR,BAL,1.20x,8520,16.8,20.16,card_92_zayflowers,61300,185.0,Top200,20.0,Valid
+inferno_1,Inferno,WR2,Luther Burden III,WR,CHI,1.00x,5400,26.7,26.7,card_182_lutherburden,61300,185.0,Top200,20.0,Valid
+inferno_1,Inferno,TE,Pat Freiermuth,TE,PIT,1.40x,6160,8.965,12.551,card_186_patfreiermuth,61300,185.0,Top200,20.0,Valid
+inferno_1,Inferno,Flex,Justin Jefferson,WR,MIN,1.30x,9490,17.2,22.36,card_74_justinjefferson,61300,185.0,Top200,20.0,Valid
+inferno_1,Inferno,Superflex,Patrick Mahomes,QB,KC,1.30x,8450,16.2,21.06,card_265_patrickmahomes,61300,185.0,Top200,20.0,Valid
+volcano_1,Volcano,QB,Caleb Williams,QB,CHI,1.30x,8060,25.12,32.66,card_45_calebwilliams,50190,148.12,Top200,9.0,Valid
+volcano_1,Volcano,RB,Rhamondre Stevenson,RB,NE,1.50x,9000,22.5,33.75,card_59_rhamondrestevenson,50190,148.12,Top200,9.0,Valid
+volcano_1,Volcano,WR,Rome Odunze,WR,CHI,1.50x,7350,10.9,16.35,card_81_romeodunze,50190,148.12,Top200,9.0,Valid
+volcano_1,Volcano,TE,Hunter Henry,TE,NE,1.40x,5600,14.1,19.74,card_163_hunterhenry,50190,148.12,Top200,9.0,Valid
+volcano_1,Volcano,Flex,Tetairoa McMillan,WR,CAR,1.40x,10220,16.3,22.82,card_133_tetairoamcmillan,50190,148.12,Top200,9.0,Valid
+volcano_1,Volcano,Flex2,CeeDee Lamb,WR,DAL,1.20x,9960,19.0,22.8,card_174_ceedeelamb,50190,148.12,Top200,9.0,Valid
+volcano_2,Volcano,QB,Drake Maye,QB,NE,1.30x,8580,31.44,40.87,card_102_drakemaye,51140,156.42,Top300,6.0,Valid
+volcano_2,Volcano,RB,D'Andre Swift,RB,CHI,1.30x,8710,19.0,24.7,card_195_dandreswift,51140,156.42,Top300,6.0,Valid
+volcano_2,Volcano,WR,Justin Jefferson,WR,MIN,1.30x,9490,17.2,22.36,card_209_justinjefferson,51140,156.42,Top300,6.0,Valid
+volcano_2,Volcano,TE,Hunter Henry,TE,NE,1.50x,6000,14.1,21.15,card_200_hunterhenry,51140,156.42,Top300,6.0,Valid
+volcano_2,Volcano,Flex,Kyren Williams,RB,LAR,1.40x,9520,19.7,27.58,card_165_kyrenwilliams,51140,156.42,Top300,6.0,Valid
+volcano_2,Volcano,Flex2,Garrett Wilson,WR,NYJ,1.30x,8840,15.2,19.76,card_9_garrettwilson,51140,156.42,Top300,6.0,Valid
+volcano_3,Volcano,QB,Caleb Williams,QB,CHI,1.40x,8680,25.12,35.17,card_226_calebwilliams,51390,148.39,Top300,6.0,Valid
+volcano_3,Volcano,RB,Javonte Williams,RB,DAL,1.20x,9000,16.2,19.44,card_61_javontewilliams,51390,148.39,Top300,6.0,Valid
+volcano_3,Volcano,WR,Matthew Golden,WR,GB,1.40x,8260,16.5,23.1,card_189_matthewgolden,51390,148.39,Top300,6.0,Valid
+volcano_3,Volcano,TE,Colston Loveland,TE,CHI,1.40x,6020,19.9,27.86,card_128_colstonloveland,51390,148.39,Top300,6.0,Valid
+volcano_3,Volcano,Flex,Garrett Wilson,WR,NYJ,1.50x,10200,15.2,22.8,card_103_garrettwilson,51390,148.39,Top300,6.0,Valid
+volcano_3,Volcano,Flex2,Tee Higgins,WR,CIN,1.30x,9230,15.4,20.02,card_141_teehiggins,51390,148.39,Top300,6.0,Valid
+volcano_4,Volcano,QB,Joe Burrow,QB,CIN,1.50x,10350,20.0,30.0,card_280_joeburrow,50750,132.94,Top300,6.0,Valid
+volcano_4,Volcano,RB,D'Andre Swift,RB,CHI,1.20x,8040,19.0,22.8,card_49_dandreswift,50750,132.94,Top300,6.0,Valid
+volcano_4,Volcano,WR,Ja'Marr Chase,WR,CIN,1.50x,12150,20.5,30.75,card_2_jamarrchase,50750,132.94,Top300,6.0,Valid
+volcano_4,Volcano,TE,Hunter Henry,TE,NE,1.10x,4400,14.1,15.51,card_287_hunterhenry,50750,132.94,Top300,6.0,Valid
+volcano_4,Volcano,Flex,Tee Higgins,WR,CIN,1.30x,9230,15.4,20.02,card_208_teehiggins,50750,132.94,Top300,6.0,Valid
+volcano_4,Volcano,Flex2,Tre Tucker,WR,LV,1.40x,6580,9.9,13.86,card_383_tretucker,50750,132.94,Top300,6.0,Valid
+scorcher_1,Scorcher,QB,Drake Maye,QB,NE,1.10x,7260,31.44,34.58,card_197_drakemaye,35930,109.08,Top200,5.0,Valid
+scorcher_1,Scorcher,RB,Derrick Henry,RB,BAL,1.10x,9020,17.6,19.36,card_262_derrickhenry,35930,109.08,Top200,5.0,Valid
+scorcher_1,Scorcher,WR,DeMario Douglas,WR,NE,1.20x,5040,5.3,6.36,card_248_demariodouglas,35930,109.08,Top200,5.0,Valid
+scorcher_1,Scorcher,TE,Colston Loveland,TE,CHI,1.20x,5160,19.9,23.88,card_374_colstonloveland,35930,109.08,Top200,5.0,Valid
+scorcher_1,Scorcher,Flex,Chuba Hubbard,RB,CAR,1.50x,9450,16.6,24.9,card_123_chubahubbard,35930,109.08,Top200,5.0,Valid
+primetimepyro_1,Primetime Pyro,QB,Caleb Williams,QB,CHI,1.30x,8060,25.12,32.66,card_319_calebwilliams,42120,122.8,Top120,9.0,Valid
+primetimepyro_1,Primetime Pyro,RB,TreVeyon Henderson,RB,NE,1.40x,7000,4.3,6.02,card_88_treveyonhenderson,42120,122.8,Top120,9.0,Valid
+primetimepyro_1,Primetime Pyro,WR,Malik Nabers,WR,NYG,1.00x,6500,14.7,14.7,card_276_maliknabers,42120,122.8,Top120,9.0,Valid
+primetimepyro_1,Primetime Pyro,TE,Colston Loveland,TE,CHI,1.40x,6020,19.9,27.86,card_392_colstonloveland,42120,122.8,Top120,9.0,Valid
+primetimepyro_1,Primetime Pyro,Flex,Christian McCaffrey,RB,SF,1.10x,8690,22.1,24.31,card_370_christianmccaffrey,42120,122.8,Top120,9.0,Valid
+primetimepyro_1,Primetime Pyro,Flex2,Dallas Goedert,TE,PHI,1.50x,5850,11.5,17.25,card_97_dallasgoedert,42120,122.8,Top120,9.0,Valid
+primetimepyro_2,Primetime Pyro,QB,Bo Nix,QB,DEN,1.40x,7140,17.1,23.94,card_364_bonix,45290,141.5,None,0.0,Valid
+primetimepyro_2,Primetime Pyro,RB,Rhamondre Stevenson,RB,NE,1.40x,8400,22.5,31.5,card_395_rhamondrestevenson,45290,141.5,None,0.0,Valid
+primetimepyro_2,Primetime Pyro,WR,Josh Downs,WR,IND,1.30x,7540,10.9,14.17,card_271_joshdowns,45290,141.5,None,0.0,Valid
+primetimepyro_2,Primetime Pyro,TE,Colston Loveland,TE,CHI,1.10x,4730,19.9,21.89,card_391_colstonloveland,45290,141.5,None,0.0,Valid
+primetimepyro_2,Primetime Pyro,Flex,Woody Marks,RB,HOU,1.50x,8100,15.6,23.4,card_60_woodymarks,45290,141.5,None,0.0,Valid
+primetimepyro_2,Primetime Pyro,Flex2,D'Andre Swift,RB,CHI,1.40x,9380,19.0,26.6,card_318_dandreswift,45290,141.5,None,0.0,Valid
+primetimepyro_3,Primetime Pyro,QB,Drake Maye,QB,NE,1.30x,8580,31.44,40.87,card_378_drakemaye,45030,109.24,None,0.0,Valid
+primetimepyro_3,Primetime Pyro,RB,D'Andre Swift,RB,CHI,1.00x,6700,19.0,19.0,card_39_dandreswift,45030,109.24,None,0.0,Valid
+primetimepyro_3,Primetime Pyro,WR,DeMario Douglas,WR,NE,1.50x,6300,5.3,7.95,card_393_demariodouglas,45030,109.24,None,0.0,Valid
+primetimepyro_3,Primetime Pyro,TE,Jake Ferguson,TE,DAL,1.30x,5980,7.3,9.49,card_111_jakeferguson,45030,109.24,None,0.0,Valid
+primetimepyro_3,Primetime Pyro,Flex,Emmett Johnson,RB,KC,1.30x,5850,4.1,5.33,card_394_emmettjohnson,45030,109.24,None,0.0,Valid
+primetimepyro_3,Primetime Pyro,Flex2,CeeDee Lamb,WR,DAL,1.40x,11620,19.0,26.6,card_118_ceedeelamb,45030,109.24,None,0.0,Valid
+flexappeal_1,Flex Appeal,QB,Caleb Williams,QB,CHI,1.20x,7440,25.12,30.14,card_260_calebwilliams,43390,115.03,None,0.0,Valid
+flexappeal_1,Flex Appeal,Flex,Rhamondre Stevenson,RB,NE,1.00x,6000,22.5,22.5,card_284_rhamondrestevenson,43390,115.03,None,0.0,Valid
+flexappeal_1,Flex Appeal,Flex2,Rome Odunze,WR,CHI,1.40x,6860,10.9,15.26,card_293_romeodunze,43390,115.03,None,0.0,Valid
+flexappeal_1,Flex Appeal,Flex3,Matthew Golden,WR,GB,1.20x,7080,16.5,19.8,card_241_matthewgolden,43390,115.03,None,0.0,Valid
+flexappeal_1,Flex Appeal,Flex4,Ashton Jeanty,RB,LV,1.30x,8450,16.5,21.45,card_210_ashtonjeanty,43390,115.03,None,0.0,Valid
+flexappeal_1,Flex Appeal,Flex5,MarShawn Lloyd,RB,GB,1.40x,7560,4.2,5.88,card_381_marshawnlloyd,43390,115.03,None,0.0,Valid

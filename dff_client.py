@@ -43,6 +43,8 @@ class DFFPlayerProjection:
     draft_id: str = ""
     opp: str = ""
     injury_status: str = ""
+    game_date: str = ""
+    kickoff_time: str = ""
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -116,6 +118,8 @@ class ProjectionsSnapshot:
                 draft_id=str(p.get("draft_id", "")),
                 opp=str(p.get("opp", "")),
                 injury_status=str(p.get("injury_status", "")),
+                game_date=str(p.get("game_date", "")),
+                kickoff_time=str(p.get("kickoff_time", "")),
             )
             for p in data.get("players", [])
         ]
@@ -267,6 +271,8 @@ def parse_dff_players(
                 draft_id=str(row.get("draft_id", "")),
                 opp=str(row.get("opp", "")),
                 injury_status=str(row.get("injury_status", "")),
+                game_date=str(row.get("game_date") or row.get("date") or ""),
+                kickoff_time=str(row.get("kickoff") or row.get("kickoff_time") or ""),
             )
         )
 
@@ -322,6 +328,8 @@ def parse_projections_csv_stream(
     # Provenance columns
     week_col = next((header_map[k] for k in ("week",) if k in header_map), None)
     date_col = next((header_map[k] for k in ("gamedate", "date") if k in header_map), None)
+    kickoff_col = next((header_map[k] for k in ("kickoff", "kickofftime", "time", "gametime") if k in header_map), None)
+    opp_col = next((header_map[k] for k in ("opp", "opponent", "oppteam") if k in header_map), None)
     slate_col = next((header_map[k] for k in ("slate", "slatetype", "slatename") if k in header_map), None)
 
     if (not name_col and not first_name_col) or not proj_col:
@@ -413,6 +421,10 @@ def parse_projections_csv_stream(
         is_overridden = athlete_key in overrides
         effective_proj = float(overrides[athlete_key]) if is_overridden else raw_proj
 
+        opp_val = str((row.get(opp_col, "") if opp_col else row.get("opp", "")) or "").strip()
+        date_val = str(row.get(date_col, "") or "").strip() if date_col else ""
+        ko_val = str(row.get(kickoff_col, "") or "").strip() if kickoff_col else ""
+
         players.append(
             DFFPlayerProjection(
                 player_name=raw_name,
@@ -423,8 +435,10 @@ def parse_projections_csv_stream(
                 raw_projection=effective_proj,
                 source_projection=raw_proj,
                 is_overridden=is_overridden,
-                opp=str(row.get("opp", "") or "").strip(),
+                opp=opp_val,
                 injury_status=str(row.get("injury_status", "") or "").strip(),
+                game_date=date_val,
+                kickoff_time=ko_val,
             )
         )
 

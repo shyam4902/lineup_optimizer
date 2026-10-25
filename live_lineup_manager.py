@@ -71,6 +71,8 @@ class PlayerLiveState:
     profile_type: str = "standard"  # "reliable", "volatile", "standard"
     bimodal_outcomes: list[tuple[float, float]] | None = None  # [(points, probability), ...]
     game_clock: str = ""  # e.g. "Q3 04:12" or "Final"
+    opp: str = ""
+    game_date: str = ""
 
     def is_locked(self, current_time: datetime | None = None) -> bool:
         if self.game_status in (GAME_STATUS_IN_PROGRESS, GAME_STATUS_FINAL):
@@ -127,6 +129,8 @@ class PlayerLiveState:
             "profile_type": self.profile_type,
             "bimodal_outcomes": self.bimodal_outcomes,
             "game_clock": self.game_clock,
+            "opp": self.opp,
+            "game_date": self.game_date,
             "is_locked": self.is_locked(),
         }
 
