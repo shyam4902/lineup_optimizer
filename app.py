@@ -157,6 +157,7 @@ class PlannerAppState:
         # Auto-load Thursday/live scores if present
         self.load_thursday_scores()
         self.recompute_planner_cards()
+        self.load_saved_plan()
 
     def load_thursday_scores(self) -> None:
         data_dir = self.root_dir / "data"
@@ -188,7 +189,9 @@ class PlannerAppState:
             if not self.isolated:
                 scores_candidates.append(self.root_dir.parent / "lineup_optimizer" / "data" / f"week{target_week}_thursday_scores.csv")
         else:
-            scores_candidates = []
+            scores_candidates = sorted(list(data_dir.glob("week*_thursday_scores.csv")), reverse=True)
+            if not self.isolated:
+                scores_candidates.extend(sorted(list((self.root_dir.parent / "lineup_optimizer" / "data").glob("week*_thursday_scores.csv")), reverse=True))
         for sc_path in scores_candidates:
             if sc_path.exists():
                 try:
@@ -289,6 +292,18 @@ class PlannerAppState:
                 elif not not_excluded:
                     c.is_eligible = False
                     c.ineligibility_reason = "Excluded by you"
+                elif player.is_locked(self.simulated_time):
+                    assigned_card_ids = (
+                        {s.card.card.card_id for l in self.active_plan.lineups for s in l.slots if s.card}
+                        if self.active_plan
+                        else set()
+                    )
+                    if c.card.card_id in assigned_card_ids:
+                        c.is_eligible = True
+                        c.ineligibility_reason = None
+                    else:
+                        c.is_eligible = False
+                        c.ineligibility_reason = "Game has already started"
                 else:
                     c.is_eligible = True
                     c.ineligibility_reason = None
@@ -482,6 +497,163 @@ class PlannerAppState:
         self.active_plan.total_weekly_estimated_payout = round(
             sum(l.estimated_payout for l in self.active_plan.lineups if l.is_valid), 2
         )
+
+    def load_saved_plan(self, plan_path: Path | None = None) -> bool:
+        path = plan_path or (self.plans_dir / "latest_plan.json")
+        if not path.exists():
+            return False
+        try:
+            with path.open("r", encoding="utf-8") as f:
+                data = json.load(f)
+
+            live_session = data.get("live_session")
+            if live_session is not None:
+                valid_fields = set(live_lineup_manager.PlayerLiveState.__dataclass_fields__.keys())
+                restored_players = {
+                    player["athlete_key"]: live_lineup_manager.PlayerLiveState(
+                        **{k: v for k, v in player.items() if k in valid_fields}
+                    )
+                    for player in live_session.get("players", [])
+                }
+                saved_time = live_session.get("simulated_time")
+                restored_time = datetime.fromisoformat(saved_time) if saved_time else None
+                self.live_states.update(restored_players)
+                if restored_time:
+                    self.simulated_time = restored_time
+
+            self.salary_source = "roster"
+            saved_overrides = data.get("projection_overrides")
+            if isinstance(saved_overrides, dict):
+                self.overrides = saved_overrides
+                self.snapshot_store.save_overrides(self.overrides)
+
+            saved_contests = data.get("contests", {})
+            for cname, c_data in saved_contests.items():
+                if cname in self.contests and isinstance(c_data, dict):
+                    if "minimum_salary" in c_data:
+                        self.contests[cname].minimum_salary = int(c_data["minimum_salary"])
+                    if "maximum_salary" in c_data:
+                        self.contests[cname].maximum_salary = int(c_data["maximum_salary"])
+
+            self.excluded_athlete_keys = set(data.get("excluded_athlete_keys", []))
+            self.load_thursday_scores()
+            self.recompute_planner_cards()
+
+            card_pool = {c.card.card_id: c for c in self.planner_cards}
+            claimed_ids: set[str] = set()
+            lineup_conflicts: dict[str, list[str]] = {}
+            missing_cards_report: list[str] = []
+            lineups: list[multi_lineup_planner.PlannerLineup] = []
+
+            raw_lineups = data.get("lineups", [])
+            slots_to_resolve: list[tuple[int, dict[str, Any], dict[str, Any]]] = []
+            for l_data in raw_lineups:
+                for s_data in l_data.get("slots", []):
+                    if s_data.get("card"):
+                        prio = 0
+                        if l_data.get("is_locked"):
+                            prio -= 2
+                        if s_data.get("is_locked"):
+                            prio -= 1
+                        slots_to_resolve.append((prio, l_data, s_data))
+            slots_to_resolve.sort(key=lambda x: x[0])
+
+            resolved_slot_cards: dict[tuple[str, str], multi_lineup_planner.PlannerCard] = {}
+            for _, l_data, s_data in slots_to_resolve:
+                card_data = s_data.get("card")
+                c = resolve_card_for_slot(card_data, card_pool, claimed_ids)
+                lid = l_data.get("lineup_id", "")
+                sname = s_data.get("slot_name", "")
+                if c:
+                    resolved_slot_cards[(lid, sname)] = c
+                else:
+                    pname = card_data.get("player_name", card_data.get("card_id", "Unknown"))
+                    pmult = card_data.get("multiplier", 1.0)
+                    missing_cards_report.append(f"{pname} (ID: {card_data.get('card_id')}) in {lid}")
+                    conf_msg = f"Conflict: Slot '{sname}' player '{pname}' ({pmult}x) is no longer available in current roster inventory."
+                    lineup_conflicts.setdefault(lid, []).append(conf_msg)
+
+            salary_migrated = data.get("salary_source") != "roster"
+            for l_data in raw_lineups:
+                slots: list[multi_lineup_planner.LineupSlotAssignment] = []
+                lid = l_data.get("lineup_id", "")
+                for s_data in l_data.get("slots", []):
+                    sname = s_data.get("slot_name", "")
+                    c = resolved_slot_cards.get((lid, sname))
+                    slots.append(
+                        multi_lineup_planner.LineupSlotAssignment(
+                            slot_name=sname,
+                            slot_kind=s_data["slot_kind"],
+                            card=c,
+                            is_locked=bool(s_data.get("is_locked", False)),
+                        )
+                    )
+                pl = multi_lineup_planner.PlannerLineup(
+                    lineup_id=lid,
+                    contest_name=l_data["contest_name"],
+                    slots=slots,
+                    is_locked=bool(l_data.get("is_locked", False)),
+                    contest_benchmark=0.0 if salary_migrated else float(l_data.get("contest_benchmark", 0.0)),
+                    benchmark_percentage=0.0 if salary_migrated else float(l_data.get("benchmark_percentage", 0.0)),
+                )
+                lineups.append(pl)
+
+            card_usage: dict[str, list[str]] = {}
+            for l in lineups:
+                for s in l.slots:
+                    if s.card is not None:
+                        card_usage.setdefault(s.card.card.card_id, []).append(l.lineup_id)
+
+            for l in lineups:
+                contest = self.contests.get(l.contest_name)
+                if contest:
+                    multi_lineup_planner.recalculate_lineup(l, contest, card_usage)
+                    if l.contest_benchmark > 0:
+                        l.benchmark_percentage = round((l.total_projection / l.contest_benchmark) * 100, 1)
+                if l.lineup_id in lineup_conflicts:
+                    for conf in lineup_conflicts[l.lineup_id]:
+                        if conf not in l.validation_errors:
+                            l.validation_errors.append(conf)
+                    l.is_valid = False
+
+            total_proj = sum(l.total_projection for l in lineups)
+            total_pay = sum(l.estimated_payout for l in lineups if l.is_valid)
+
+            benchmarks = multi_lineup_planner.compute_all_contest_benchmarks(
+                self.planner_cards, self.contests
+            )
+            for l in lineups:
+                c_bench = benchmarks.get(l.contest_name, {}).get("projected_benchmark", 0.0)
+                l.contest_benchmark = c_bench
+                contest = self.contests.get(l.contest_name)
+                if contest:
+                    multi_lineup_planner.recalculate_lineup(l, contest, card_usage)
+                    if c_bench > 0:
+                        l.benchmark_percentage = round((l.total_projection / c_bench) * 100, 1)
+
+            self.active_plan = multi_lineup_planner.WeeklyPlan(
+                plan_id=data.get("plan_id", f"plan_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}"),
+                name=data.get("name", "Loaded Plan"),
+                created_at=data.get("created_at", datetime.now(timezone.utc).isoformat()),
+                updated_at=datetime.now(timezone.utc).isoformat(),
+                slate_id=data.get("slate_id", self.snapshot.slate_id if self.snapshot else "unknown"),
+                salary_source=self.salary_source,
+                contests=self.contests,
+                lineups=lineups,
+                roster_cards=self.planner_cards,
+                projection_overrides=self.overrides,
+                excluded_athlete_keys=sorted(self.excluded_athlete_keys),
+                total_weekly_projection=round(total_proj, 2),
+                total_weekly_estimated_payout=round(total_pay, 2),
+                contest_benchmarks=benchmarks,
+                quality_threshold=data.get("quality_threshold", 0.0),
+            )
+            if live_session is not None:
+                self.dashboard_schedule = live_session.get("dashboard_schedule")
+            self.last_reallocation_plan = None
+            return True
+        except Exception:
+            return False
 
 
 def resolve_card_for_slot(
@@ -730,13 +902,6 @@ def api_dff_refresh():
             return jsonify({"status": "error", "message": "Extracted player pool too small"}), 400
 
         snap = dff_client.parse_dff_players(raw_players, selected.slate_id, selected, STATE.overrides)
-        if STATE.snapshot and STATE.snapshot.players:
-            new_keys = {p.athlete_key for p in snap.players}
-            for prev_p in STATE.snapshot.players:
-                if prev_p.athlete_key not in new_keys:
-                    p_live = STATE.live_states.get(prev_p.athlete_key)
-                    if p_live and p_live.game_status in (live_lineup_manager.GAME_STATUS_IN_PROGRESS, live_lineup_manager.GAME_STATUS_FINAL):
-                        snap.players.append(prev_p)
         STATE.snapshot_store.save_snapshot(snap)
         STATE.snapshot = snap
         STATE.recompute_planner_cards()
@@ -773,13 +938,6 @@ def api_projections_upload():
         if err:
             return jsonify({"status": "error", "message": err}), 400
         snap = dff_client.parse_projections_csv_stream(stream, source_name=upload.filename or "uploaded_csv", user_overrides=STATE.overrides)
-        if STATE.snapshot and STATE.snapshot.players:
-            new_keys = {p.athlete_key for p in snap.players}
-            for prev_p in STATE.snapshot.players:
-                if prev_p.athlete_key not in new_keys:
-                    p_live = STATE.live_states.get(prev_p.athlete_key)
-                    if p_live and p_live.game_status in (live_lineup_manager.GAME_STATUS_IN_PROGRESS, live_lineup_manager.GAME_STATUS_FINAL):
-                        snap.players.append(prev_p)
         STATE.snapshot_store.save_snapshot(snap)
         STATE.snapshot = snap
         STATE.recompute_planner_cards()
@@ -930,6 +1088,10 @@ def api_planner_generate():
 
     try:
         current_slate_id = STATE.snapshot.slate_id if STATE.snapshot else "unknown"
+        started_athlete_keys = [
+            akey for akey, p in STATE.live_states.items()
+            if p.is_locked(STATE.simulated_time) or p.game_status in (live_lineup_manager.GAME_STATUS_IN_PROGRESS, live_lineup_manager.GAME_STATUS_FINAL)
+        ]
         plan = multi_lineup_planner.solve_multi_lineup_allocation(
             cards=STATE.planner_cards,
             contests=STATE.contests,
@@ -940,6 +1102,7 @@ def api_planner_generate():
             salary_source=STATE.salary_source,
             quality_threshold=quality_threshold,
             excluded_athlete_keys=STATE.excluded_athlete_keys,
+            started_athlete_keys=started_athlete_keys,
         )
         STATE.active_plan = plan
         plan.inventory_summary["contest_distribution"] = contest_dist
@@ -1034,6 +1197,9 @@ def _swap_candidates(lineup, slot):
     result = []
     for card in STATE.planner_cards:
         if not card.is_eligible:
+            continue
+        p_state = STATE.live_states.get(card.card.athlete_key)
+        if p_state and (p_state.is_locked(STATE.simulated_time) or p_state.game_status in (live_lineup_manager.GAME_STATUS_IN_PROGRESS, live_lineup_manager.GAME_STATUS_FINAL)):
             continue
         target.card = card
         new_errors = [e for e in multi_lineup_planner.blocking_lineup_errors(trial, contest, used) if e not in baseline]
@@ -1275,7 +1441,8 @@ def api_planner_edit_lineup():
                 not (STATE.live_states.get(c.card.athlete_key) and STATE.live_states[c.card.athlete_key].is_locked(STATE.simulated_time))]
         # Add fixed cards back into pool so the solver can keep them in their locked slots.
         fixed_ids = set(fixed.values())
-        fixed_card_map = {s.card.card.card_id: s.card for s in lineup.slots
+        planner_card_map = {c.card.card_id: c for c in STATE.planner_cards}
+        fixed_card_map = {s.card.card.card_id: planner_card_map.get(s.card.card.card_id, s.card) for s in lineup.slots
                           if s.card and s.card.card.card_id in fixed_ids}
         pool_ids = {c.card.card_id for c in pool}
         for fid, fc in fixed_card_map.items():

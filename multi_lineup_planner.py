@@ -1194,6 +1194,7 @@ def solve_multi_lineup_allocation(
     _time_limit: float = 20,
     quality_threshold: float = 0.0,
     contest_benchmarks: Mapping[str, dict[str, Any]] | None = None,
+    started_athlete_keys: Sequence[str] | None = None,
 ) -> WeeklyPlan:
     """Solve multi-lineup allocation across the weekly portfolio using PuLP MIP.
 
@@ -1316,6 +1317,12 @@ def solve_multi_lineup_allocation(
     for (lid, sname), pcard in locked_assignments.items():
         card_dict[pcard.card.card_id] = pcard
 
+    started_set = set(started_athlete_keys or [])
+    locked_card_ids_by_slot: dict[tuple[str, str], str] = {
+        (l_id, s_name): pcard.card.card_id
+        for (l_id, s_name), pcard in locked_assignments.items()
+    }
+
     pt_teams = get_primetime_eligible_teams()
     for lid, cname, slots in candidate_specs:
         cfg = enabled_contests[cname]
@@ -1324,6 +1331,11 @@ def solve_multi_lineup_allocation(
             for cid, pcard in card_dict.items():
                 if pcard.card.position not in allowed:
                     continue
+                # Started game rule: cards for athletes whose games have already started
+                # can only be used in their exact locked slot assignment, never candidate slots.
+                if pcard.card.athlete_key in started_set:
+                    if locked_card_ids_by_slot.get((lid, sname)) != cid:
+                        continue
                 # Primetime collection rule: Primetime collection cards can only enter Primetime Pyro
                 is_pt_collection = getattr(pcard.card, "collection_group", "Core") == "Primetime"
                 if is_pt_collection and cname != "Primetime Pyro":
